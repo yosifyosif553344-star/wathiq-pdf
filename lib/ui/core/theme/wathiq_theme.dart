@@ -87,8 +87,8 @@ class WathiqTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: palette.canvasBackground,
       dividerColor: palette.structuralBorder,
-      focusColor: palette.accent.withOpacity(0.28),
-      cardTheme: CardTheme(
+      focusColor: palette.accent.withValues(alpha: 0.28),
+      cardTheme: CardThemeData(
         color: palette.surfaceContainer,
         elevation: 0,
         margin: EdgeInsets.zero,
