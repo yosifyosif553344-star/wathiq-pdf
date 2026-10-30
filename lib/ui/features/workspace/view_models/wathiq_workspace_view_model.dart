@@ -188,18 +188,26 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
   Future<void> pickPdfFiles({bool allowMultiple = true}) async {
     _workspaceError = null;
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: const ['pdf'],
-        allowMultiple: allowMultiple,
-      );
-      if (result == null || result.files.isEmpty) return;
+      final List<PlatformFile> pickedFiles;
+      if (allowMultiple) {
+        pickedFiles = await FilePicker.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: const ['pdf'],
+        );
+      } else {
+        final single = await FilePicker.pickFile(
+          type: FileType.custom,
+          allowedExtensions: const ['pdf'],
+        );
+        pickedFiles = single != null ? <PlatformFile>[single] : const <PlatformFile>[];
+      }
+      if (pickedFiles.isEmpty) return;
 
       if (!allowMultiple) {
         _selectedFiles.clear();
       }
 
-      for (final platformFile in result.files) {
+      for (final platformFile in pickedFiles) {
         final path = platformFile.path;
         if (path == null) continue;
         final file = File(path);

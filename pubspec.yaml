@@ -19,7 +19,7 @@ dependencies:
 
   # المسح الضوئي بالكاميرا واختيار الملفات والصور
   image_picker: any
-  file_picker: ^10.3.11
+  file_picker: ^13.3.0
 
   # التخزين المحلي وإدارة المسارات والمشاركة
   shared_preferences: any
