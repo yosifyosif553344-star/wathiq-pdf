@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+
+<html class="dark" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>وثيق PDF - دمج وتنظيم الصفحات</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&amp;family=Cairo:wght@400;500;600;700;800&amp;family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-tertiary-container": "#783901",
+            "on-error-container": "#ffdad6",
+            "surface-container-highest": "#333538",
+            "primary-fixed-dim": "#45dfa4",
+            "primary-container": "#34d399",
+            "on-tertiary": "#502400",
+            "surface-tint": "#45dfa4",
+            "surface-container": "#1e2023",
+            "outline-variant": "#3c4a42",
+            "on-primary-fixed-variant": "#005137",
+            "background": "#111317",
+            "surface": "#111317",
+            "on-primary": "#003825",
+            "tertiary-fixed": "#ffdcc7",
+            "secondary": "#b7c8e1",
+            "on-surface": "#e2e2e6",
+            "on-secondary": "#213145",
+            "primary-fixed": "#68fcbf",
+            "secondary-container": "#3a4a5f",
+            "primary": "#5af0b3",
+            "outline": "#85948b",
+            "on-tertiary-fixed": "#311300",
+            "on-primary-container": "#00563b",
+            "secondary-fixed": "#d3e4fe",
+            "secondary-fixed-dim": "#b7c8e1",
+            "on-tertiary-fixed-variant": "#723600",
+            "on-secondary-fixed": "#0b1c30",
+            "on-error": "#690005",
+            "on-secondary-container": "#a9bad3",
+            "tertiary": "#ffccad",
+            "surface-variant": "#333538",
+            "surface-bright": "#37393d",
+            "tertiary-container": "#ffa668",
+            "error-container": "#93000a",
+            "surface-container-high": "#282a2d",
+            "inverse-primary": "#006c4b",
+            "inverse-on-surface": "#2f3034",
+            "surface-dim": "#111317",
+            "on-primary-fixed": "#002114",
+            "surface-container-low": "#1a1c1f",
+            "on-secondary-fixed-variant": "#38485d",
+            "error": "#ffb4ab",
+            "tertiary-fixed-dim": "#ffb787",
+            "surface-container-lowest": "#0c0e11",
+            "inverse-surface": "#e2e2e6",
+            "on-background": "#e2e2e6",
+            "on-surface-variant": "#bbcac0"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-xl": "2.5rem",
+            "space-sm": "0.5rem",
+            "space-xs": "0.25rem",
+            "space-md": "1rem",
+            "space-lg": "1.5rem",
+            "margin": "1.25rem",
+            "gutter": "1rem"
+          },
+          "fontFamily": {
+            "body-sm": ["Almarai"],
+            "body-md": ["Almarai"],
+            "headline-md": ["Cairo"],
+            "label-mono-sm": ["IBM Plex Mono"],
+            "headline-xl-mobile": ["Cairo"],
+            "headline-xl": ["Cairo"],
+            "headline-lg": ["Cairo"],
+            "body-lg": ["Almarai"],
+            "label-mono-lg": ["IBM Plex Mono"]
+          },
+          "fontSize": {
+            "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "label-mono-sm": ["11px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "headline-xl-mobile": ["28px", { "lineHeight": "38px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+            "headline-xl": ["36px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "headline-lg": ["26px", { "lineHeight": "36px", "fontWeight": "600" }],
+            "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+            "label-mono-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      line-height: 1;
+      display: inline-block;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      display: none;
+    }
+    .custom-scroll {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface-container-lowest text-on-surface font-body-md text-body-md antialiased min-h-screen pb-36 selection:bg-primary selection:text-on-primary">
+<!-- Main Sticky App Header -->
+<header class="sticky top-0 z-40 bg-surface-container-low border-b border-outline-variant/60 backdrop-blur-md">
+<div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between gap-3">
+<!-- Back Action -->
+<button aria-label="الرجوع للقائمة السابقة" class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-on-surface hover:text-primary border border-outline-variant/50 transition-colors active:scale-95" type="button">
+<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+<!-- Center Title & Security Badge -->
+<div class="flex-1 text-center truncate">
+<div class="flex items-center justify-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[18px]" style="font-variation-settings: 'FILL' 1;">shield</span>
+<h1 class="font-headline-md text-[17px] font-bold text-on-surface tracking-tight">تنظيم ودمج الصفحات</h1>
+</div>
+<p class="font-label-mono-sm text-[10px] text-outline font-medium tracking-wider uppercase mt-0.5">MERGE &amp; ORGANIZE STUDIO</p>
+</div>
+<!-- Realtime Isolate Status Icon -->
+<div class="flex items-center">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center border border-outline-variant/50 text-primary relative">
+<span class="material-symbols-outlined text-[20px]">offline_bolt</span>
+<span class="absolute top-1 left-1 w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+</div>
+</div>
+</div>
+<!-- On-Device Cryptographic Shield Banner -->
+<div class="bg-surface-container-high/60 border-t border-outline-variant/30 px-4 py-1.5 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span class="font-label-mono-sm text-[10px] text-primary">معالجة آمنة في خيط خلفي (Isolate)</span>
+</div>
+<span class="font-label-mono-sm text-[10px] text-outline">100% OFFLINE</span>
+</div>
+</header>
+<!-- Main View Container -->
+<main class="max-w-md mx-auto px-4 pt-4 space-y-6">
+<!-- Segmented Tab Bar -->
+<div class="bg-surface-container-low p-1 rounded-xl border border-outline-variant/50 grid grid-cols-3 gap-1 shadow-sm">
+<button class="py-2.5 px-2 rounded-lg bg-surface-container text-primary font-headline-md text-xs font-semibold flex items-center justify-center gap-1.5 border border-primary/20 shadow-inner" type="button">
+<span class="material-symbols-outlined text-[16px]">folder_managed</span>
+<span>ترتيب الملفات</span>
+<span class="font-label-mono-sm text-[10px] bg-primary/10 text-primary px-1.5 py-0.2 rounded-full">3</span>
+</button>
+<button class="py-2.5 px-2 rounded-lg text-on-surface-variant hover:text-on-surface font-headline-md text-xs font-medium flex items-center justify-center gap-1.5 transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">grid_view</span>
+<span>المعاينة</span>
+<span class="font-label-mono-sm text-[10px] text-outline">18</span>
+</button>
+<button class="py-2.5 px-2 rounded-lg text-on-surface-variant hover:text-on-surface font-headline-md text-xs font-medium flex items-center justify-center gap-1.5 transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">call_split</span>
+<span>تقسيم</span>
+</button>
+</div>
+<!-- Section 1: Reorder Files (Drag & Drop + Priority Queue) -->
+<section class="space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">reorder</span>
+<h2 class="font-headline-md text-sm font-bold text-on-surface">قائمة الملفات المجدولة</h2>
+</div>
+<div class="font-label-mono-sm text-xs text-outline bg-surface-container px-2 py-0.5 rounded border border-outline-variant/40">
+          3 ملفات • 6.4 MB
+        </div>
+</div>
+<!-- File Cards Stack -->
+<div class="space-y-2.5">
+<!-- File Card 1 -->
+<div class="bg-surface-container-low rounded-xl border border-outline-variant/60 p-3 hover:border-primary/50 transition-colors flex items-center gap-3 relative group">
+<!-- Drag Handle -->
+<button aria-label="سحب لإعادة الترتيب" class="text-outline hover:text-on-surface cursor-grab active:cursor-grabbing p-1" type="button">
+<span class="material-symbols-outlined text-[20px]">drag_indicator</span>
+</button>
+<!-- PDF Icon / Thumb preview badge -->
+<div class="w-10 h-11 bg-surface-container-high rounded-lg border border-outline-variant/50 flex flex-col items-center justify-center shrink-0 relative overflow-hidden">
+<span class="material-symbols-outlined text-primary text-[18px]">picture_as_pdf</span>
+<span class="font-label-mono-sm text-[8px] text-outline font-semibold tracking-tighter mt-0.5">PDF</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-primary/40 rounded-bl"></span>
+</div>
+<!-- File Info -->
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-1.5">
+<p class="font-headline-md text-xs font-bold text-on-surface truncate">تقرير_الميزانية_2024.pdf</p>
+<span class="material-symbols-outlined text-primary text-[14px]" title="مشفر ومحمي">lock</span>
+</div>
+<div class="flex items-center gap-2 mt-1">
+<span class="font-label-mono-sm text-[11px] text-outline">8 صفحات</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-label-mono-sm text-[11px] text-outline">2.8 MB</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-label-mono-sm text-[10px] text-primary/80">AES-256</span>
+</div>
+</div>
+<!-- Position Controls & Delete -->
+<div class="flex items-center gap-1 border-r border-outline-variant/40 pr-2">
+<div class="flex flex-col gap-0.5">
+<button aria-label="تحريك لأعلى" class="w-7 h-6 rounded bg-surface-container flex items-center justify-center text-outline hover:text-primary transition-colors border border-outline-variant/30" type="button">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span>
+</button>
+<button aria-label="تحريك لأسفل" class="w-7 h-6 rounded bg-surface-container flex items-center justify-center text-outline hover:text-primary transition-colors border border-outline-variant/30" type="button">
+<span class="material-symbols-outlined text-[14px]">arrow_downward</span>
+</button>
+</div>
+<button aria-label="حذف الملف من القائمة" class="w-8 h-8 rounded-lg flex items-center justify-center text-error hover:bg-error/10 transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+<!-- File Card 2 -->
+<div class="bg-surface-container-low rounded-xl border border-outline-variant/60 p-3 hover:border-primary/50 transition-colors flex items-center gap-3 relative group">
+<button aria-label="سحب لإعادة الترتيب" class="text-outline hover:text-on-surface cursor-grab active:cursor-grabbing p-1" type="button">
+<span class="material-symbols-outlined text-[20px]">drag_indicator</span>
+</button>
+<div class="w-10 h-11 bg-surface-container-high rounded-lg border border-outline-variant/50 flex flex-col items-center justify-center shrink-0 relative overflow-hidden">
+<span class="material-symbols-outlined text-primary text-[18px]">verified</span>
+<span class="font-label-mono-sm text-[8px] text-outline font-semibold tracking-tighter mt-0.5">PDF</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-1.5">
+<p class="font-headline-md text-xs font-bold text-on-surface truncate">عقد_التأسيس_موقع.pdf</p>
+<span class="material-symbols-outlined text-secondary text-[14px]" title="موقع رقمياً">draw</span>
+</div>
+<div class="flex items-center gap-2 mt-1">
+<span class="font-label-mono-sm text-[11px] text-outline">6 صفحات</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-label-mono-sm text-[11px] text-outline">1.9 MB</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-label-mono-sm text-[10px] text-secondary">SHA-256</span>
+</div>
+</div>
+<div class="flex items-center gap-1 border-r border-outline-variant/40 pr-2">
+<div class="flex flex-col gap-0.5">
+<button aria-label="تحريك لأعلى" class="w-7 h-6 rounded bg-surface-container flex items-center justify-center text-outline hover:text-primary transition-colors border border-outline-variant/30" type="button">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span>
+</button>
+<button aria-label="تحريك لأسفل" class="w-7 h-6 rounded bg-surface-container flex items-center justify-center text-outline hover:text-primary transition-colors border border-outline-variant/30" type="button">
+<span class="material-symbols-outlined text-[14px]">arrow_downward</span>
+</button>
+</div>
+<button aria-label="حذف الملف من القائمة" class="w-8 h-8 rounded-lg flex items-center justify-center text-error hover:bg-error/10 transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+<!-- File Card 3 -->
+<div class="bg-surface-container-low rounded-xl border border-outline-variant/60 p-3 hover:border-primary/50 transition-colors flex items-center gap-3 relative group">
+<button aria-label="سحب لإعادة الترتيب" class="text-outline hover:text-on-surface cursor-grab active:cursor-grabbing p-1" type="button">
+<span class="material-symbols-outlined text-[20px]">drag_indicator</span>
+</button>
+<div class="w-10 h-11 bg-surface-container-high rounded-lg border border-outline-variant/50 flex flex-col items-center justify-center shrink-0 relative overflow-hidden">
+<span class="material-symbols-outlined text-outline text-[18px]">description</span>
+<span class="font-label-mono-sm text-[8px] text-outline font-semibold tracking-tighter mt-0.5">PDF</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-1.5">
+<p class="font-headline-md text-xs font-bold text-on-surface truncate">ملحق_الشروط_والأحكام.pdf</p>
+</div>
+<div class="flex items-center gap-2 mt-1">
+<span class="font-label-mono-sm text-[11px] text-outline">4 صفحات</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-label-mono-sm text-[11px] text-outline">1.7 MB</span>
+</div>
+</div>
+<div class="flex items-center gap-1 border-r border-outline-variant/40 pr-2">
+<div class="flex flex-col gap-0.5">
+<button aria-label="تحريك لأعلى" class="w-7 h-6 rounded bg-surface-container flex items-center justify-center text-outline hover:text-primary transition-colors border border-outline-variant/30" type="button">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span>
+</button>
+<button aria-label="تحريك لأسفل" class="w-7 h-6 rounded bg-surface-container flex items-center justify-center text-outline hover:text-primary transition-colors border border-outline-variant/30" type="button">
+<span class="material-symbols-outlined text-[14px]">arrow_downward</span>
+</button>
+</div>
+<button aria-label="حذف الملف من القائمة" class="w-8 h-8 rounded-lg flex items-center justify-center text-error hover:bg-error/10 transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Add PDF Button (Dashed Blueprint Style) -->
+<button class="w-full py-3.5 px-4 rounded-xl border border-dashed border-outline hover:border-primary bg-surface-container-low/40 hover:bg-surface-container-low text-on-surface-variant hover:text-primary flex items-center justify-center gap-2 transition-all active:scale-[0.99]" type="button">
+<span class="material-symbols-outlined text-[20px]">add_circle</span>
+<span class="font-headline-md text-xs font-semibold">+ إضافة ملف PDF أو مسح وثيقة بالكاميرا</span>
+</button>
+</section>
+<!-- Section 2: Page Thumbnails Interactive Matrix -->
+<section class="space-y-3 pt-2">
+<!-- Section Header with Group Controls -->
+<div class="flex items-center justify-between">
+<div>
+<h2 class="font-headline-md text-sm font-bold text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[18px]">auto_stories</span>
+<span>معاينة وتعديل الصفحات الفردية</span>
+</h2>
+<p class="font-body-sm text-[11px] text-outline mt-0.5">انقر لتحديد الصفحة أو استخدم الإجراءات السريعة</p>
+</div>
+<div class="flex items-center gap-1.5">
+<button class="px-2.5 py-1 rounded bg-surface-container hover:bg-surface-container-high border border-outline-variant/60 text-outline hover:text-on-surface font-label-mono-sm text-[10px] flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[12px]">check_box</span>
+<span>تحديد الكل</span>
+</button>
+<button class="p-1 rounded bg-surface-container hover:bg-surface-container-high border border-outline-variant/60 text-outline hover:text-on-surface" title="عكس ترتيب الصفحات" type="button">
+<span class="material-symbols-outlined text-[16px]">swap_vert</span>
+</button>
+</div>
+</div>
+<!-- Page Thumbnail Grid (3 Columns) -->
+<div class="grid grid-cols-3 gap-2.5">
+<!-- Thumbnail 1 (Selected State) -->
+<div class="bg-surface-container-low rounded-xl border-2 border-primary p-2 relative flex flex-col justify-between group overflow-hidden shadow-lg shadow-primary/5">
+<!-- Selection Status Badge -->
+<div class="flex items-center justify-between mb-1.5">
+<span class="font-label-mono-sm text-[11px] font-bold text-primary">P.01</span>
+<div class="w-5 h-5 rounded-full bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[14px] font-bold">check</span>
+</div>
+</div>
+<!-- Simulated High-Precision Vector Document Sheet -->
+<div class="w-full aspect-[3/4] bg-surface-container-highest rounded border border-outline-variant/60 p-2 flex flex-col justify-between overflow-hidden relative shadow-inner">
+<!-- Simulated PDF Page Header -->
+<div class="space-y-1">
+<div class="w-2/3 h-1.5 bg-primary/40 rounded-full"></div>
+<div class="w-full h-1 bg-outline/20 rounded-full"></div>
+<div class="w-5/6 h-1 bg-outline/20 rounded-full"></div>
+</div>
+<!-- Simulated Diagram/Chart -->
+<div class="h-10 w-full bg-surface-container rounded border border-outline-variant/30 p-1 flex items-end justify-around gap-0.5">
+<div class="w-2 h-4 bg-primary/30 rounded-t-sm"></div>
+<div class="w-2 h-7 bg-primary rounded-t-sm"></div>
+<div class="w-2 h-5 bg-primary/50 rounded-t-sm"></div>
+<div class="w-2 h-8 bg-secondary-container rounded-t-sm"></div>
+</div>
+<!-- Simulated Footer Line -->
+<div class="flex justify-between items-center pt-1 border-t border-outline-variant/20">
+<div class="w-6 h-0.5 bg-outline/30 rounded"></div>
+<div class="w-3 h-0.5 bg-outline/30 rounded"></div>
+</div>
+</div>
+<!-- Micro Quick Tools Overlay / Floating Bar -->
+<div class="flex items-center justify-around pt-2 mt-1 border-t border-outline-variant/40">
+<button aria-label="تدوير 90 درجة" class="text-outline hover:text-primary transition-colors p-0.5" title="تدوير 90°" type="button">
+<span class="material-symbols-outlined text-[16px]">rotate_right</span>
+</button>
+<button aria-label="استخراج الصفحة" class="text-outline hover:text-primary transition-colors p-0.5" title="استخراج" type="button">
+<span class="material-symbols-outlined text-[16px]">open_in_new</span>
+</button>
+<button aria-label="حذف الصفحة" class="text-outline hover:text-error transition-colors p-0.5" title="حذف" type="button">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+</div>
+<!-- Thumbnail 2 (Rotated 90° State with Indicator) -->
+<div class="bg-surface-container-low rounded-xl border border-outline-variant/60 hover:border-outline p-2 relative flex flex-col justify-between group overflow-hidden">
+<div class="flex items-center justify-between mb-1.5">
+<div class="flex items-center gap-1">
+<span class="font-label-mono-sm text-[11px] font-bold text-on-surface">P.02</span>
+<!-- Rotation Badge -->
+<span class="font-label-mono-sm text-[9px] bg-secondary-container/80 text-secondary px-1 rounded flex items-center">
+                90°↻
+              </span>
+</div>
+<div class="w-4 h-4 rounded-full border border-outline-variant/70"></div>
+</div>
+<!-- Rotated Landscape Document Mini-Mockup -->
+<div class="w-full aspect-[3/4] bg-surface-container rounded border border-outline-variant/60 p-2 flex flex-col justify-center items-center overflow-hidden">
+<div class="w-full h-14 bg-surface-container-high rounded border border-outline-variant/40 p-1 flex flex-col gap-1 rotate-90 scale-90">
+<div class="w-1/2 h-1 bg-outline/40 rounded"></div>
+<div class="grid grid-cols-3 gap-0.5 my-auto">
+<div class="h-2 bg-outline/20 rounded"></div>
+<div class="h-2 bg-outline/20 rounded"></div>
+<div class="h-2 bg-outline/20 rounded"></div>
+</div>
+<div class="w-1/3 h-1 bg-outline/40 rounded self-end"></div>
+</div>
+</div>
+<div class="flex items-center justify-around pt-2 mt-1 border-t border-outline-variant/40">
+<button aria-label="تدوير 90 درجة" class="text-primary hover:text-primary-fixed transition-colors p-0.5" title="تدوير 90°" type="button">
+<span class="material-symbols-outlined text-[16px]">rotate_right</span>
+</button>
+<button aria-label="استخراج الصفحة" class="text-outline hover:text-primary transition-colors p-0.5" title="استخراج" type="button">
+<span class="material-symbols-outlined text-[16px]">open_in_new</span>
+</button>
+<button aria-label="حذف الصفحة" class="text-outline hover:text-error transition-colors p-0.5" title="حذف" type="button">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+</div>
+<!-- Thumbnail 3 (Normal Contract Document) -->
+<div class="bg-surface-container-low rounded-xl border border-outline-variant/60 hover:border-outline p-2 relative flex flex-col justify-between group overflow-hidden">
+<div class="flex items-center justify-between mb-1.5">
+<span class="font-label-mono-sm text-[11px] font-bold text-on-surface">P.03</span>
+<div class="w-4 h-4 rounded-full border border-outline-variant/70"></div>
+</div>
+<!-- Document Sheet (Contract Text Lines) -->
+<div class="w-full aspect-[3/4] bg-surface-container rounded border border-outline-variant/60 p-2 flex flex-col justify-start gap-1 overflow-hidden">
+<div class="w-3/4 h-1.5 bg-outline/40 rounded mb-1"></div>
+<div class="w-full h-1 bg-outline/20 rounded"></div>
+<div class="w-full h-1 bg-outline/20 rounded"></div>
+<div class="w-4/5 h-1 bg-outline/20 rounded"></div>
+<div class="w-full h-1 bg-outline/20 rounded"></div>
+<div class="w-2/3 h-1 bg-outline/20 rounded"></div>
+<!-- Tiny Signature Box -->
+<div class="mt-auto border border-dashed border-outline-variant rounded p-1 flex justify-between items-center">
+<div class="w-6 h-1 bg-outline/30 rounded"></div>
+<span class="material-symbols-outlined text-[10px] text-secondary">ink_pen</span>
+</div>
+</div>
+<div class="flex items-center justify-around pt-2 mt-1 border-t border-outline-variant/40">
+<button aria-label="تدوير 90 درجة" class="text-outline hover:text-primary transition-colors p-0.5" title="تدوير 90°" type="button">
+<span class="material-symbols-outlined text-[16px]">rotate_right</span>
+</button>
+<button aria-label="استخراج الصفحة" class="text-outline hover:text-primary transition-colors p-0.5" title="استخراج" type="button">
+<span class="material-symbols-outlined text-[16px]">open_in_new</span>
+</button>
+<button aria-label="حذف الصفحة" class="text-outline hover:text-error transition-colors p-0.5" title="حذف" type="button">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Quick Expand / Scroll Hint for 18 Pages -->
+<button class="w-full py-2 bg-surface-container-high/40 hover:bg-surface-container-high text-outline hover:text-on-surface rounded-lg border border-outline-variant/30 font-label-mono-sm text-xs flex items-center justify-center gap-1.5 transition-colors" type="button">
+<span>عرض كافة الصفحات المتبقية (+15 صفحة)</span>
+<span class="material-symbols-outlined text-[16px]">expand_more</span>
+</button>
+</section>
+<!-- Section 3: Smart Range Split & Burst Extraction -->
+<section class="bg-surface-container-low rounded-xl border border-outline-variant/60 p-4 space-y-3.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">splitscreen</span>
+<h3 class="font-headline-md text-xs font-bold text-on-surface">خيارات التقسيم المتقدم (Range Split)</h3>
+</div>
+<span class="font-label-mono-sm text-[10px] text-outline">اختياري</span>
+</div>
+<!-- Range Input Container -->
+<div class="space-y-1.5">
+<label class="block font-body-sm text-[11px] text-on-surface-variant" for="page-range">تخصيص نطاق الصفحات المراد استخراجها أو استثناؤها:</label>
+<div class="relative">
+<input class="w-full bg-surface rounded-lg border border-outline-variant/70 focus:border-primary focus:ring-1 focus:ring-primary text-on-surface font-label-mono-sm text-xs py-2.5 px-3 pl-8 text-left transition-colors placeholder:text-outline/40" dir="ltr" id="page-range" placeholder="مثال: 1-5, 8, 12-18" type="text" value="1-8, 11, 14-18"/>
+<div class="absolute left-2.5 top-1/2 -translate-y-1/2 text-outline">
+<span class="material-symbols-outlined text-[16px]">tag</span>
+</div>
+</div>
+</div>
+<!-- Burst Mode Toggle (Atomic Switch) -->
+<div class="pt-2 border-t border-outline-variant/40 flex items-center justify-between gap-3">
+<div class="flex-1">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-md text-xs font-semibold text-on-surface">وضع التفكيك الفردي (Burst Mode)</span>
+<span class="font-label-mono-sm text-[9px] bg-outline-variant/40 text-on-surface-variant px-1 rounded">PRO</span>
+</div>
+<p class="font-body-sm text-[11px] text-outline mt-0.5">حفظ كل صفحة كملف PDF مستقل بضغطة زر واحدة</p>
+</div>
+<!-- Custom Dark System Switch -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-on-primary after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-on-surface after:border-surface-container after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-checked:after:bg-on-primary"></div>
+</label>
+</div>
+</section>
+</main>
+<!-- Persistent Floating Bottom Processing Bar -->
+<aside class="fixed bottom-0 inset-x-0 z-50 bg-surface-container-low/95 backdrop-blur-lg border-t border-outline-variant/80 px-4 py-3 shadow-2xl">
+<div class="max-w-md mx-auto space-y-2.5">
+<!-- Processing Metrics Summary Bar -->
+<div class="flex items-center justify-between text-outline px-1">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="font-label-mono-sm text-[11px] text-on-surface">18 صفحة مجهزة</span>
+</div>
+<div class="flex items-center gap-3 font-label-mono-sm text-[11px]">
+<span>الحجم: ~6.4 MB</span>
+<span class="text-outline-variant">•</span>
+<span class="text-primary font-semibold">0-Footprint</span>
+</div>
+</div>
+<!-- Execution Primary CTA Button -->
+<button class="w-full h-12 bg-primary-container hover:bg-primary-fixed text-[#062E22] rounded-xl font-headline-md text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg shadow-primary-container/20" type="button">
+<span class="material-symbols-outlined text-[22px] font-bold" style="font-variation-settings: 'FILL' 1;">merge</span>
+<span>دمج وحفظ في الجهاز</span>
+<span class="material-symbols-outlined text-[18px]">download</span>
+</button>
+<!-- Local Device Safety Note -->
+<p class="text-center font-label-mono-sm text-[10px] text-outline/80">
+        يتم تشفير ودمج البيانات محلياً عبر محرك المعالجة الآمن دون اتصال بالإنترنت
+      </p>
+</div>
+</aside>
+</body></html>

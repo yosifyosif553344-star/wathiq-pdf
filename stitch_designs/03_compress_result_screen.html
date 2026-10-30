@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+
+<html class="dark" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>وثيق PDF - ضغط حجم الملف والنتيجة الفورية</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&amp;family=Cairo:wght@400;500;600;700;800&amp;family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary-fixed-variant": "#38485d",
+            "surface-container-lowest": "#0c0e11",
+            "outline": "#85948b",
+            "on-tertiary": "#502400",
+            "on-primary-fixed-variant": "#005137",
+            "inverse-primary": "#006c4b",
+            "tertiary": "#ffccad",
+            "outline-variant": "#3c4a42",
+            "on-secondary-fixed": "#0b1c30",
+            "on-background": "#e2e2e6",
+            "surface-container-low": "#1a1c1f",
+            "on-error-container": "#ffdad6",
+            "on-primary-fixed": "#002114",
+            "on-secondary-container": "#a9bad3",
+            "surface-container-highest": "#333538",
+            "on-primary": "#003825",
+            "primary-fixed-dim": "#45dfa4",
+            "on-surface-variant": "#bbcac0",
+            "surface-container-high": "#282a2d",
+            "surface-bright": "#37393d",
+            "on-tertiary-container": "#783901",
+            "surface-variant": "#333538",
+            "surface": "#111317",
+            "secondary-fixed-dim": "#b7c8e1",
+            "primary": "#5af0b3",
+            "on-tertiary-fixed-variant": "#723600",
+            "tertiary-fixed-dim": "#ffb787",
+            "primary-fixed": "#68fcbf",
+            "secondary": "#b7c8e1",
+            "on-primary-container": "#00563b",
+            "on-tertiary-fixed": "#311300",
+            "inverse-on-surface": "#2f3034",
+            "secondary-fixed": "#d3e4fe",
+            "surface-container": "#1e2023",
+            "error": "#ffb4ab",
+            "surface-dim": "#111317",
+            "on-error": "#690005",
+            "on-secondary": "#213145",
+            "secondary-container": "#3a4a5f",
+            "surface-tint": "#45dfa4",
+            "primary-container": "#34d399",
+            "inverse-surface": "#e2e2e6",
+            "tertiary-fixed": "#ffdcc7",
+            "tertiary-container": "#ffa668",
+            "on-surface": "#e2e2e6",
+            "error-container": "#93000a",
+            "background": "#111317"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-xs": "0.25rem",
+            "space-sm": "0.5rem",
+            "space-xl": "2.5rem",
+            "space-md": "1rem",
+            "space-lg": "1.5rem",
+            "margin": "1.25rem",
+            "gutter": "1rem"
+          },
+          "fontFamily": {
+            "label-mono-lg": [
+              "IBM Plex Mono"
+            ],
+            "headline-xl-mobile": [
+              "Cairo"
+            ],
+            "body-md": [
+              "Almarai"
+            ],
+            "label-mono-sm": [
+              "IBM Plex Mono"
+            ],
+            "headline-lg": [
+              "Cairo"
+            ],
+            "headline-md": [
+              "Cairo"
+            ],
+            "body-sm": [
+              "Almarai"
+            ],
+            "headline-xl": [
+              "Cairo"
+            ],
+            "body-lg": [
+              "Almarai"
+            ]
+          },
+          "fontSize": {
+            "label-mono-lg": [
+              "14px",
+              {
+                "lineHeight": "20px",
+                "letterSpacing": "0.05em",
+                "fontWeight": "600"
+              }
+            ],
+            "headline-xl-mobile": [
+              "28px",
+              {
+                "lineHeight": "38px",
+                "letterSpacing": "-0.01em",
+                "fontWeight": "700"
+              }
+            ],
+            "body-md": [
+              "14px",
+              {
+                "lineHeight": "22px",
+                "fontWeight": "400"
+              }
+            ],
+            "label-mono-sm": [
+              "11px",
+              {
+                "lineHeight": "16px",
+                "letterSpacing": "0.04em",
+                "fontWeight": "500"
+              }
+            ],
+            "headline-lg": [
+              "26px",
+              {
+                "lineHeight": "36px",
+                "fontWeight": "600"
+              }
+            ],
+            "headline-md": [
+              "20px",
+              {
+                "lineHeight": "28px",
+                "fontWeight": "600"
+              }
+            ],
+            "body-sm": [
+              "12px",
+              {
+                "lineHeight": "18px",
+                "fontWeight": "400"
+              }
+            ],
+            "headline-xl": [
+              "36px",
+              {
+                "lineHeight": "48px",
+                "letterSpacing": "-0.02em",
+                "fontWeight": "700"
+              }
+            ],
+            "body-lg": [
+              "16px",
+              {
+                "lineHeight": "26px",
+                "fontWeight": "400"
+              }
+            ]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      background-color: #0D0F12;
+      color: #e2e2e6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .material-symbols-outlined {
+      font-size: 20px;
+      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .tactical-border {
+      border: 1px solid #64748B;
+    }
+    .tactical-active-border {
+      border: 1px solid #34D399;
+    }
+    .tactical-surface {
+      background-color: #161920;
+    }
+    .tactical-chip {
+      background-color: #161920;
+      border: 1px solid #34D399;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface-container-lowest font-body-md text-on-surface antialiased selection:bg-primary-container selection:text-on-primary min-h-screen flex justify-center">
+<!-- Mobile Viewport Simulator Shell -->
+<div class="w-full max-w-md bg-[#0D0F12] min-h-screen flex flex-col relative pb-24 shadow-2xl">
+<!-- Top App Bar (Shared Component Execution) -->
+<header class="flex justify-between items-center w-full px-5 py-3 border-b border-outline-variant bg-surface-container-low sticky top-0 z-40 backdrop-blur-md">
+<div class="flex items-center gap-space-sm">
+<button aria-label="الرجوع" class="p-2 -mr-2 rounded-lg text-on-surface hover:text-primary transition-colors duration-150 active:scale-95" type="button">
+<span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary" data-icon="shield" style="font-variation-settings: 'FILL' 1;">shield</span>
+<span class="text-headline-md font-headline-md text-on-surface font-semibold tracking-tight">وثيق PDF</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container animate-pulse" data-icon="offline_bolt" style="font-variation-settings: 'FILL' 1;">offline_bolt</span>
+</div>
+</header>
+<!-- Main Content Flow -->
+<main class="flex-1 px-4 py-4 space-y-4">
+<!-- Header & Security Guarantee Badge -->
+<section class="space-y-2">
+<div class="flex items-center justify-between">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface font-bold tracking-tight">
+            ضغط المستند والنتيجة الفورية
+          </h1>
+</div>
+<!-- Security Chip: Zero-Cloud / On-Device -->
+<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg tactical-chip text-primary-container">
+<span class="material-symbols-outlined text-base" data-icon="lock" style="font-variation-settings: 'FILL' 1;">lock</span>
+<span class="font-label-mono-sm text-label-mono-sm tracking-wide">
+            معالجة محلية داخل المعالج (Zero-Cloud / On-Device)
+          </span>
+</div>
+</section>
+<!-- Section 1: Original Document Info Card -->
+<section class="tactical-surface tactical-border rounded-xl p-3.5 space-y-3">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-lg bg-surface-container-high border border-outline-variant flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined text-2xl" data-icon="description" style="font-variation-settings: 'FILL' 1;">description</span>
+</div>
+<div>
+<p class="font-headline-md text-body-lg text-on-surface font-semibold truncate max-w-[210px] leading-snug">
+                تقرير_الميزانية_السنوية_2024.pdf
+              </p>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="font-label-mono-sm text-label-mono-sm text-on-surface-variant">28 صفحة</span>
+<span class="inline-block w-1 h-1 rounded-full bg-outline"></span>
+<span class="font-label-mono-sm text-label-mono-sm text-primary font-semibold">15.0 MB</span>
+</div>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-label-mono-sm text-[10px] border border-outline-variant">
+            PDF v1.7
+          </span>
+</div>
+<div class="pt-2 border-t border-outline-variant/60 flex items-center justify-between text-on-surface-variant">
+<div class="flex items-center gap-1.5 font-label-mono-sm text-label-mono-sm">
+<span class="material-symbols-outlined text-xs text-outline" data-icon="fingerprint">fingerprint</span>
+<span class="text-outline">SHA-256:</span>
+<span class="text-on-surface font-mono tracking-wider">8f4e2..a91c</span>
+</div>
+<span class="text-[11px] font-label-mono-sm text-primary-container flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+            محمي بالتشفير
+          </span>
+</div>
+</section>
+<!-- Section 2: Target Compression Level Picker (3 Interactive Cards) -->
+<section class="space-y-2.5">
+<div class="flex items-center justify-between">
+<h2 class="font-headline-md text-headline-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container text-lg" data-icon="tune">tune</span>
+            مستوى الضغط المستهدف
+          </h2>
+<span class="font-label-mono-sm text-label-mono-sm text-on-surface-variant">اختر الخوارزمية</span>
+</div>
+<div class="space-y-2">
+<!-- Level 1: Light Compression -->
+<label class="group relative flex items-center justify-between p-3 rounded-xl tactical-surface tactical-border cursor-pointer transition-all duration-150 hover:border-outline">
+<div class="flex items-start gap-3">
+<input class="mt-1 text-primary-container focus:ring-0 focus:ring-offset-0 bg-[#0D0F12] border-outline" name="compression-level" type="radio"/>
+<div class="space-y-0.5">
+<div class="flex items-center gap-2">
+<span class="font-body-md text-body-md text-on-surface font-semibold">ضغط خفيف (جودة الطباعة الأصلية)</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">دقة 300 DPI، تقليل طفيف (~25% توفير)، مخصص للطباعة الورقية</p>
+</div>
+</div>
+<div class="text-left shrink-0 pl-1">
+<span class="block font-label-mono-lg text-label-mono-lg text-on-surface-variant">~11.2 MB</span>
+<span class="font-label-mono-sm text-[10px] text-outline">-25%</span>
+</div>
+</label>
+<!-- Level 2: Balanced Compression (DEFAULT / RECOMMENDED) -->
+<label class="group relative flex items-center justify-between p-3.5 rounded-xl tactical-surface tactical-active-border cursor-pointer shadow-lg transition-all duration-150 bg-[#161920]/90">
+<div class="flex items-start gap-3">
+<input checked="" class="mt-1 text-primary-container focus:ring-0 focus:ring-offset-0 bg-[#0D0F12] border-primary-container" name="compression-level" type="radio"/>
+<div class="space-y-1">
+<div class="flex items-center gap-2">
+<span class="font-body-md text-body-md text-on-surface font-bold">ضغط متوازن (للمنصات والبريد)</span>
+<span class="bg-primary-container text-[#062E22] font-label-mono-sm text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">
+                    RECOMMENDED
+                  </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface">دقة 150 DPI، توفير ~80%، متوافق مع البريد والمعاملات</p>
+</div>
+</div>
+<div class="text-left shrink-0 pl-1">
+<span class="block font-label-mono-lg text-label-mono-lg text-primary-container font-bold">3.0 MB</span>
+<span class="font-label-mono-sm text-label-mono-sm text-primary font-semibold">-80% توفير</span>
+</div>
+</label>
+<!-- Level 3: Extreme Compression -->
+<label class="group relative flex items-center justify-between p-3 rounded-xl tactical-surface tactical-border cursor-pointer transition-all duration-150 hover:border-outline">
+<div class="flex items-start gap-3">
+<input class="mt-1 text-primary-container focus:ring-0 focus:ring-offset-0 bg-[#0D0F12] border-outline" name="compression-level" type="radio"/>
+<div class="space-y-0.5">
+<div class="flex items-center gap-2">
+<span class="font-body-md text-body-md text-on-surface font-semibold">ضغط أقصى (أصغر حجم ممكن)</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">دقة 96 DPI، تقليص فائق للصور (~90% توفير)، للأرشفة السريعة</p>
+</div>
+</div>
+<div class="text-left shrink-0 pl-1">
+<span class="block font-label-mono-lg text-label-mono-lg text-on-surface-variant">~1.5 MB</span>
+<span class="font-label-mono-sm text-[10px] text-outline">-90%</span>
+</div>
+</label>
+</div>
+</section>
+<!-- Section 3: Before & After Live Metrics Comparison Card -->
+<section class="tactical-surface tactical-border rounded-xl p-4 space-y-3.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container" data-icon="analytics">analytics</span>
+<span class="font-headline-md text-body-lg text-on-surface font-bold">المقارنة الرقمية الفورية</span>
+</div>
+<span class="font-label-mono-sm text-label-mono-sm text-primary-container bg-[#0D0F12] px-2 py-0.5 rounded border border-outline-variant">
+            محرك WebAssembly V8
+          </span>
+</div>
+<!-- Metric Numbers -->
+<div class="grid grid-cols-2 gap-3 p-3 bg-[#0D0F12] rounded-lg border border-outline-variant">
+<div>
+<span class="block font-body-sm text-body-sm text-on-surface-variant">الحجم الأصلي</span>
+<span class="font-label-mono-lg text-label-mono-lg line-through text-outline">15.0 MB</span>
+</div>
+<div class="border-r border-outline-variant pr-3">
+<span class="block font-body-sm text-body-sm text-primary font-medium">الحجم الجديد المعالج</span>
+<div class="flex items-baseline gap-1.5">
+<span class="font-label-mono-lg text-2xl text-primary-container font-extrabold tracking-tight">3.0</span>
+<span class="font-label-mono-sm text-label-mono-sm text-primary-container font-semibold">MB</span>
+</div>
+</div>
+</div>
+<!-- Big Reduction Badge -->
+<div class="bg-surface-container-high/80 border border-outline-variant p-2.5 rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container" data-icon="trending_down">trending_down</span>
+<span class="font-body-md text-body-md text-on-surface font-semibold">
+              تم تقليص الحجم بنسبة 80%
+            </span>
+</div>
+<span class="font-label-mono-sm text-label-mono-sm text-primary-container font-mono dir-ltr font-bold">
+            -12.0 MB وفر
+          </span>
+</div>
+<!-- Visual Comparative Progress Bar -->
+<div class="space-y-1.5">
+<div class="flex justify-between font-label-mono-sm text-label-mono-sm text-on-surface-variant">
+<span>نسبة الاستهلاك الجديد: 20%</span>
+<span>المساحة المحررة: 80%</span>
+</div>
+<div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden flex border border-outline-variant">
+<div class="h-full bg-primary-container" style="width: 20%"></div>
+<div class="h-full bg-[#0D0F12]" style="width: 80%"></div>
+</div>
+</div>
+<!-- RAM Cleared Micro-indicator -->
+<div class="flex items-center gap-2 text-on-surface-variant font-label-mono-sm text-[11px] pt-1 border-t border-outline-variant/50">
+<span class="material-symbols-outlined text-primary-container text-sm" data-icon="memory">memory</span>
+<span>تم مسح الكاش المؤقت من الذاكرة العشوائية تلقائياً (0 KB Temp Cache / RAM Cleared)</span>
+</div>
+</section>
+<!-- Section 4: Image/Scanner Filter Quick Settings -->
+<section class="tactical-surface tactical-border rounded-xl p-3.5 space-y-3">
+<h3 class="font-headline-md text-body-lg text-on-surface font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container" data-icon="display_settings">display_settings</span>
+          إعدادات معالجة الصفحات المدمجة
+        </h3>
+<div class="space-y-2.5">
+<!-- Page Dimensions -->
+<div class="space-y-1">
+<span class="font-body-sm text-body-sm text-on-surface-variant">أبعاد الصفحة:</span>
+<div class="grid grid-cols-2 gap-2">
+<button class="py-2 px-3 rounded-lg text-center font-body-sm text-body-sm font-semibold bg-primary-container text-[#062E22] transition-colors" type="button">
+                A4 قياسي (محدد)
+              </button>
+<button class="py-2 px-3 rounded-lg text-center font-body-sm text-body-sm font-medium bg-[#0D0F12] text-on-surface-variant border border-outline-variant hover:border-outline transition-colors" type="button">
+                حجم الصورة الأصلي
+              </button>
+</div>
+</div>
+<!-- Page Margins -->
+<div class="space-y-1">
+<span class="font-body-sm text-body-sm text-on-surface-variant">هوامش حدود الصفحات:</span>
+<div class="grid grid-cols-2 gap-2">
+<button class="py-2 px-3 rounded-lg text-center font-body-sm text-body-sm font-medium bg-[#0D0F12] text-on-surface-variant border border-outline-variant hover:border-outline transition-colors" type="button">
+                بدون هوامش
+              </button>
+<button class="py-2 px-3 rounded-lg text-center font-body-sm text-body-sm font-semibold bg-primary-container text-[#062E22] transition-colors" type="button">
+                هوامش قياسية 10mm
+              </button>
+</div>
+</div>
+<!-- Color Mode & Contrast -->
+<div class="space-y-1">
+<span class="font-body-sm text-body-sm text-on-surface-variant">معالجة الألوان ومستوى التباين:</span>
+<div class="grid grid-cols-2 gap-2">
+<button class="py-2 px-3 rounded-lg text-center font-body-sm text-body-sm font-semibold bg-primary-container text-[#062E22] transition-colors" type="button">
+                ألوان المستند الأصلية
+              </button>
+<button class="py-2 px-3 rounded-lg text-center font-body-sm text-body-sm font-medium bg-[#0D0F12] text-on-surface-variant border border-outline-variant hover:border-outline transition-colors" type="button">
+                أبيض وأسود عالي التباين
+              </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 5: Ready File Result Card (Complete State) -->
+<section class="tactical-surface tactical-border rounded-xl p-4 space-y-3.5 border-t-2 border-t-primary-container">
+<!-- Status Indicator -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface font-bold">الملف جاهز ومحفوظ محلياً بنجاح</span>
+</div>
+<span class="font-label-mono-sm text-label-mono-sm text-primary-container bg-[#0D0F12] px-2 py-0.5 rounded border border-outline-variant">
+            1.4 ثانية
+          </span>
+</div>
+<!-- Output File Info -->
+<div class="bg-[#0D0F12] p-3 rounded-lg border border-outline-variant space-y-1.5">
+<p class="font-label-mono-sm text-body-sm text-on-surface font-semibold truncate dir-ltr text-right">
+            تقرير_الميزانية_السنوية_2024_compressed.pdf
+          </p>
+<div class="flex items-center gap-1.5 text-on-surface-variant font-label-mono-sm text-[11px]">
+<span class="material-symbols-outlined text-sm text-outline" data-icon="folder">folder</span>
+<span class="truncate">التخزين الداخلي &gt; وثيق_PDF &gt; المستندات</span>
+</div>
+</div>
+<!-- Primary CTA: Direct Share -->
+<button class="w-full h-12 bg-primary-container hover:bg-primary-fixed text-[#062E22] rounded-lg font-headline-md text-body-lg font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-md" type="button">
+<span class="material-symbols-outlined font-bold text-xl" data-icon="share">share</span>
+<span>مشاركة الملف مباشرة</span>
+</button>
+<!-- Secondary CTAs: Open & Preview / View in Folder -->
+<div class="grid grid-cols-2 gap-2 pt-1">
+<button class="h-11 rounded-lg border border-outline hover:border-primary-container text-on-surface hover:text-primary-container font-headline-md text-body-md font-semibold flex items-center justify-center gap-1.5 transition-colors active:scale-[0.98] bg-[#0D0F12]" type="button">
+<span class="material-symbols-outlined text-lg" data-icon="visibility">visibility</span>
+<span>فتح ومعاينة</span>
+</button>
+<button class="h-11 rounded-lg border border-outline hover:border-primary-container text-on-surface hover:text-primary-container font-headline-md text-body-md font-semibold flex items-center justify-center gap-1.5 transition-colors active:scale-[0.98] bg-[#0D0F12]" type="button">
+<span class="material-symbols-outlined text-lg" data-icon="folder_open">folder_open</span>
+<span>عرض في المجلد</span>
+</button>
+</div>
+<!-- Final Security Verification Banner -->
+<div class="flex items-center gap-2 p-2 rounded bg-surface-container-high/60 border border-outline-variant text-[11px] font-label-mono-sm text-primary">
+<span class="material-symbols-outlined text-sm" data-icon="verified_user">verified_user</span>
+<span>تم التحقق من سلامة التشفير ولم يتم إرسال أي بايت خارج الجهاز</span>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar (Shared Component Execution) -->
+<!-- Destination: 'الأدوات' is ACTIVE because compression is an engineering tool -->
+<nav class="fixed bottom-0 w-full max-w-md z-50 flex justify-around items-center px-4 py-2 border-t border-outline-variant bg-surface-container-low backdrop-blur-md">
+<!-- Tab 1: المستندات -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors duration-150 active:scale-95 py-1" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="description">description</span>
+<span class="text-label-mono-sm font-label-mono-sm mt-0.5">المستندات</span>
+</a>
+<!-- Tab 2: الأدوات (Active Match) -->
+<a class="flex flex-col items-center justify-center text-primary font-semibold hover:text-primary transition-colors duration-150 active:scale-95 py-1" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="build" style="font-variation-settings: 'FILL' 1;">build</span>
+<span class="text-label-mono-sm font-label-mono-sm mt-0.5">الأدوات</span>
+</a>
+<!-- Tab 3: السجل -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors duration-150 active:scale-95 py-1" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="history">history</span>
+<span class="text-label-mono-sm font-label-mono-sm mt-0.5">السجل</span>
+</a>
+<!-- Tab 4: الإعدادات -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors duration-150 active:scale-95 py-1" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="settings">settings</span>
+<span class="text-label-mono-sm font-label-mono-sm mt-0.5">الإعدادات</span>
+</a>
+</nav>
+</div>
+</body></html>

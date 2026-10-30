@@ -1,0 +1,37 @@
+name: wathiq_pdf
+description: "وثيق PDF (Wathiq PDF) - تطبيق شامل لمعالجة وإدارة ملفات PDF محلياً بالكامل على الجهاز بدون إنترنت."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # محركات معالجة ملفات الـ PDF والصور محلياً بالكامل
+  syncfusion_flutter_pdf: ^27.1.48
+  pdf: ^3.10.8
+  image: ^4.1.7
+
+  # المسح الضوئي بالكاميرا واختيار الملفات والصور
+  image_picker: ^1.0.7
+  file_picker: ^8.0.0
+
+  # التخزين المحلي وإدارة المسارات والمشاركة
+  shared_preferences: ^2.2.2
+  path_provider: ^2.1.2
+  path: ^1.8.3
+  share_plus: ^10.0.0
+  open_filex: ^4.4.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true

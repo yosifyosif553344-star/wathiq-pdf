@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+
+<html class="dark" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>وثيق PDF - معالجة المستندات محلياً بدون إنترنت</title>
+<!-- Google Fonts: Cairo, Almarai, IBM Plex Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700&amp;family=Cairo:wght@400;600;700;800&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration verbatim from Design System -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-container-highest": "#333538",
+            "on-primary-fixed-variant": "#005137",
+            "on-background": "#e2e2e6",
+            "tertiary-container": "#ffa668",
+            "inverse-surface": "#e2e2e6",
+            "on-primary": "#003825",
+            "on-surface": "#e2e2e6",
+            "surface-container-lowest": "#0c0e11",
+            "inverse-primary": "#006c4b",
+            "primary-fixed-dim": "#45dfa4",
+            "surface-container": "#1e2023",
+            "secondary-fixed": "#d3e4fe",
+            "on-secondary-fixed-variant": "#38485d",
+            "primary-fixed": "#68fcbf",
+            "surface-container-high": "#282a2d",
+            "primary": "#5af0b3",
+            "tertiary-fixed-dim": "#ffb787",
+            "on-error": "#690005",
+            "secondary": "#b7c8e1",
+            "on-surface-variant": "#bbcac0",
+            "background": "#111317",
+            "secondary-container": "#3a4a5f",
+            "surface": "#111317",
+            "surface-dim": "#111317",
+            "primary-container": "#34d399",
+            "error": "#ffb4ab",
+            "surface-bright": "#37393d",
+            "surface-tint": "#45dfa4",
+            "on-secondary": "#213145",
+            "secondary-fixed-dim": "#b7c8e1",
+            "error-container": "#93000a",
+            "outline": "#85948b",
+            "on-tertiary": "#502400",
+            "on-primary-container": "#00563b",
+            "on-primary-fixed": "#002114",
+            "outline-variant": "#3c4a42",
+            "tertiary-fixed": "#ffdcc7",
+            "on-secondary-container": "#a9bad3",
+            "on-secondary-fixed": "#0b1c30",
+            "on-tertiary-fixed": "#311300",
+            "surface-variant": "#333538",
+            "inverse-on-surface": "#2f3034",
+            "on-tertiary-container": "#783901",
+            "tertiary": "#ffccad",
+            "on-error-container": "#ffdad6",
+            "surface-container-low": "#1a1c1f",
+            "on-tertiary-fixed-variant": "#723600"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-xs": "0.25rem",
+            "margin": "1.25rem",
+            "space-xl": "2.5rem",
+            "space-lg": "1.5rem",
+            "space-md": "1rem",
+            "gutter": "1rem",
+            "space-sm": "0.5rem"
+          },
+          "fontFamily": {
+            "body-md": ["Almarai"],
+            "headline-md": ["Cairo"],
+            "body-sm": ["Almarai"],
+            "label-mono-sm": ["IBM Plex Mono"],
+            "headline-xl": ["Cairo"],
+            "label-mono-lg": ["IBM Plex Mono"],
+            "headline-xl-mobile": ["Cairo"],
+            "headline-lg": ["Cairo"],
+            "body-lg": ["Almarai"]
+          },
+          "fontSize": {
+            "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "label-mono-sm": ["11px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "headline-xl": ["36px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "label-mono-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+            "headline-xl-mobile": ["28px", { "lineHeight": "38px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+            "headline-lg": ["26px", { "lineHeight": "36px", "fontWeight": "600" }],
+            "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    /* Subtle custom tactical scrollbar */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0c0e11;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #3c4a42;
+      border-radius: 2px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #5af0b3;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface-container-lowest text-on-surface font-body-md text-body-md antialiased min-h-screen pb-24 selection:bg-primary selection:text-on-primary">
+<!-- TopAppBar Component (from Shared Components JSON & Style Guidance) -->
+<header class="sticky top-0 z-40 bg-surface-container-low border-b border-outline-variant flex justify-between items-center w-full px-5 py-3 transition-colors duration-150">
+<div class="flex items-center gap-3">
+<!-- Shield Leading Icon -->
+<div class="w-11 h-11 rounded-lg bg-surface-container border border-outline-variant flex items-center justify-center text-primary shadow-sm">
+<span class="material-symbols-outlined text-primary" data-icon="shield" style="font-variation-settings: 'FILL' 1;">shield</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h1 class="text-headline-md font-headline-md font-semibold text-on-surface tracking-tight">وثيق PDF</h1>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-high border border-outline-variant text-label-mono-sm font-label-mono-sm text-primary">v2.4</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary inline-block animate-pulse"></span>
+          معالجة داخل المعالج (On-Device)
+        </p>
+</div>
+</div>
+<!-- Actions / Trailing Cluster -->
+<div class="flex items-center gap-2">
+<!-- Hardware / Offline Badge -->
+<div class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container border border-outline-variant text-primary text-label-mono-sm font-label-mono-sm">
+<span class="material-symbols-outlined text-sm" data-icon="offline_bolt" style="font-variation-settings: 'FILL' 1;">offline_bolt</span>
+<span>بدون اتصال 100%</span>
+</div>
+<!-- Settings Icon Button (44px target) -->
+<button aria-label="الإعدادات" class="w-11 h-11 rounded-lg border border-outline-variant hover:border-primary text-on-surface-variant hover:text-primary bg-surface-container flex items-center justify-center transition-colors duration-150 active:scale-95">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+</header>
+<!-- Main Content Container -->
+<main class="max-w-4xl mx-auto px-4 sm:px-6 pt-5 space-y-6">
+<!-- Security & Trust Status Strip -->
+<div class="w-full bg-surface-container-low border border-outline-variant rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-label-mono-sm font-label-mono-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-base" data-icon="lock" style="font-variation-settings: 'FILL' 1;">lock</span>
+<span class="text-on-surface font-medium">نظام التشفير السيادي:</span>
+<span class="text-on-surface-variant">تشفير عتادي محلي</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5 text-primary">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span>شبكة الإنترنت: محجوبة بالكامل</span>
+</div>
+<div class="hidden md:flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-xs" data-icon="memory">memory</span>
+<span>ذاكرة مؤقتة معزولة (Zero-Leak)</span>
+</div>
+</div>
+</div>
+<!-- Focal Drop & Scan Hero Card -->
+<section class="relative overflow-hidden bg-surface-container rounded-xl border border-outline-variant p-6 sm:p-8 transition-colors hover:border-outline">
+<!-- Watermark Background Decal -->
+<div class="absolute -left-10 -bottom-10 opacity-5 pointer-events-none text-on-surface select-none">
+<span class="material-symbols-outlined" data-icon="shield" style="font-size: 240px;">shield</span>
+</div>
+<div class="relative z-10 space-y-5">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+<div class="space-y-1">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container-lowest border border-outline-variant text-primary text-label-mono-sm font-label-mono-sm">
+<span class="material-symbols-outlined text-xs" data-icon="verified_user">verified_user</span>
+<span>خالٍ من خوادم التخزين السحابي</span>
+</div>
+<h2 class="text-headline-lg font-headline-lg font-bold text-on-surface mt-1">ابدأ فحص ومعالجة مستندك</h2>
+</div>
+<span class="text-label-mono-sm font-label-mono-sm text-on-surface-variant">الحد الأقصى للملف: بلا قيود</span>
+</div>
+<p class="text-body-md font-body-md text-on-surface-variant max-w-2xl leading-relaxed">
+          تبقى ملفاتك مشفرة ومحفوظة في ذاكرة جهازك فقط ولا ترسل لأي خادم خارجي. اختر ملفاً للبدء في الدمج، التوقيع، الضغط، أو التشفير الفوري داخل معالج هاتفك.
+        </p>
+<!-- Primary Action Cluster -->
+<div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
+<!-- Primary CTA Button (48px+ min target) -->
+<button class="flex-1 min-h-[48px] px-6 py-3 rounded-lg bg-primary-container text-on-primary-container font-headline-md text-body-lg font-bold flex items-center justify-center gap-2 hover:opacity-95 active:scale-[0.99] transition-all duration-150 shadow-md">
+<span class="material-symbols-outlined" data-icon="note_add" style="font-variation-settings: 'FILL' 1;">note_add</span>
+<span>اختيار ملف PDF من الجهاز</span>
+</button>
+<!-- Secondary CTA Button -->
+<button class="min-h-[48px] px-6 py-3 rounded-lg bg-transparent border border-outline hover:border-primary text-on-surface hover:text-primary font-headline-md text-body-lg font-semibold flex items-center justify-center gap-2 transition-colors duration-150 active:scale-[0.99]">
+<span class="material-symbols-outlined" data-icon="document_scanner">document_scanner</span>
+<span>مسح وثيقة بالكاميرا</span>
+</button>
+</div>
+<!-- Real-time processing speed pill -->
+<div class="pt-2 flex items-center gap-3 border-t border-outline-variant/60 text-label-mono-sm font-label-mono-sm text-on-surface-variant">
+<div class="flex items-center gap-1 text-primary">
+<span class="material-symbols-outlined text-xs" data-icon="bolt">bolt</span>
+<span>معدل المعالجة: ~42 MB/ثانية</span>
+</div>
+<span>•</span>
+<span>دعم صيغ: PDF/A، Encrypted PDF، Scan OCR</span>
+</div>
+</div>
+</section>
+<!-- Hierarchical Tool Matrix -->
+<section class="space-y-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded bg-primary"></span>
+<h2 class="text-headline-md font-headline-md font-bold text-on-surface">أدوات المعالجة الفورية</h2>
+</div>
+<span class="text-label-mono-sm font-label-mono-sm text-on-surface-variant">5 أدوات نشطة محلياً</span>
+</div>
+<!-- Bento Grid for Primary Tools -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Primary Tool 1: Merge -->
+<div class="group bg-surface-container rounded-xl border border-outline-variant p-5 hover:border-primary transition-colors duration-150 flex flex-col justify-between">
+<div class="space-y-3">
+<div class="flex items-start justify-between">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high border border-outline-variant group-hover:border-primary flex items-center justify-center text-primary transition-colors">
+<span class="material-symbols-outlined text-2xl" data-icon="call_merge">call_merge</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest border border-outline-variant text-label-mono-sm font-label-mono-sm text-primary">الأكثر طلباً</span>
+</div>
+<div>
+<h3 class="text-headline-md font-headline-md font-bold text-on-surface group-hover:text-primary transition-colors">دمج الملفات (Merge PDF)</h3>
+<p class="text-body-md font-body-md text-on-surface-variant mt-1">دمج عدة مستندات في ملف متناسق واحد مع إعادة ترتيب الصفحات بسلاسة.</p>
+</div>
+</div>
+<div class="mt-5 pt-3 border-t border-outline-variant flex items-center justify-between">
+<span class="text-label-mono-sm font-label-mono-sm text-on-surface-variant">الذاكرة: Zero-Footprint</span>
+<button class="min-h-[44px] px-4 py-2 rounded bg-surface-container-high border border-outline-variant text-on-surface group-hover:border-primary group-hover:text-primary text-body-sm font-body-sm font-semibold flex items-center gap-1.5 transition-colors">
+<span>بدء الدمج</span>
+<span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Primary Tool 2: Compress -->
+<div class="group bg-surface-container rounded-xl border border-outline-variant p-5 hover:border-primary transition-colors duration-150 flex flex-col justify-between">
+<div class="space-y-3">
+<div class="flex items-start justify-between">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high border border-outline-variant group-hover:border-primary flex items-center justify-center text-primary transition-colors">
+<span class="material-symbols-outlined text-2xl" data-icon="compress">compress</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest border border-outline-variant text-label-mono-sm font-label-mono-sm text-primary">توفير حتى 80%</span>
+</div>
+<div>
+<h3 class="text-headline-md font-headline-md font-bold text-on-surface group-hover:text-primary transition-colors">ضغط حجم الملف (Compress PDF)</h3>
+<p class="text-body-md font-body-md text-on-surface-variant mt-1">تقليل الحجم حتى 80% دون فقد الجودة باستخدام خوارزميات الضغط المحلية الصارمة.</p>
+</div>
+</div>
+<div class="mt-5 pt-3 border-t border-outline-variant flex items-center justify-between">
+<span class="text-label-mono-sm font-label-mono-sm text-on-surface-variant">خوارزمية: WebAssembly GZip</span>
+<button class="min-h-[44px] px-4 py-2 rounded bg-surface-container-high border border-outline-variant text-on-surface group-hover:border-primary group-hover:text-primary text-body-sm font-body-sm font-semibold flex items-center gap-1.5 transition-colors">
+<span>ضغط فوري</span>
+<span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Secondary Linear Tool Rows -->
+<div class="space-y-2.5 pt-1">
+<!-- Row 1: Split -->
+<div class="group bg-surface-container-low rounded-lg border border-outline-variant hover:border-primary p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors duration-150">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-lg bg-surface-container border border-outline-variant group-hover:border-primary flex items-center justify-center text-primary shrink-0 transition-colors">
+<span class="material-symbols-outlined" data-icon="call_split">call_split</span>
+</div>
+<div>
+<h4 class="text-body-lg font-headline-md font-bold text-on-surface group-hover:text-primary transition-colors">تقسيم واستخراج الصفحات (Split PDF)</h4>
+<p class="text-body-sm font-body-sm text-on-surface-variant">استخرج نطاقاً محدداً من الصفحات أو احفظ كل صفحة في ملف مستقل.</p>
+</div>
+</div>
+<button class="min-h-[44px] px-4 py-2 rounded bg-surface-container border border-outline-variant hover:border-primary text-on-surface hover:text-primary text-body-sm font-semibold flex items-center justify-center gap-1 transition-colors self-end sm:self-center shrink-0">
+<span>تقسيم</span>
+<span class="material-symbols-outlined text-sm" data-icon="chevron_left">chevron_left</span>
+</button>
+</div>
+<!-- Row 2: Organize -->
+<div class="group bg-surface-container-low rounded-lg border border-outline-variant hover:border-primary p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors duration-150">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-lg bg-surface-container border border-outline-variant group-hover:border-primary flex items-center justify-center text-primary shrink-0 transition-colors">
+<span class="material-symbols-outlined" data-icon="auto_stories">auto_stories</span>
+</div>
+<div>
+<h4 class="text-body-lg font-headline-md font-bold text-on-surface group-hover:text-primary transition-colors">ترتيب وحذف وتدوير الصفحات (Organize Pages)</h4>
+<p class="text-body-sm font-body-sm text-on-surface-variant">إعادة ترتيب الصفحات بمرونة بالسحب والتحديد وتصحيح زوايا المستندات المقلوبة.</p>
+</div>
+</div>
+<button class="min-h-[44px] px-4 py-2 rounded bg-surface-container border border-outline-variant hover:border-primary text-on-surface hover:text-primary text-body-sm font-semibold flex items-center justify-center gap-1 transition-colors self-end sm:self-center shrink-0">
+<span>تنظيم</span>
+<span class="material-symbols-outlined text-sm" data-icon="chevron_left">chevron_left</span>
+</button>
+</div>
+<!-- Row 3: Images to PDF -->
+<div class="group bg-surface-container-low rounded-lg border border-outline-variant hover:border-primary p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors duration-150">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-lg bg-surface-container border border-outline-variant group-hover:border-primary flex items-center justify-center text-primary shrink-0 transition-colors">
+<span class="material-symbols-outlined" data-icon="photo_library">photo_library</span>
+</div>
+<div>
+<h4 class="text-body-lg font-headline-md font-bold text-on-surface group-hover:text-primary transition-colors">تحويل الصور إلى PDF (Images to PDF)</h4>
+<p class="text-body-sm font-body-sm text-on-surface-variant">تحويل صور المستندات، الفواتير، والبطاقات إلى ملف PDF عالي الدقة دون ضغط مشوه.</p>
+</div>
+</div>
+<button class="min-h-[44px] px-4 py-2 rounded bg-surface-container border border-outline-variant hover:border-primary text-on-surface hover:text-primary text-body-sm font-semibold flex items-center justify-center gap-1 transition-colors self-end sm:self-center shrink-0">
+<span>تحويل</span>
+<span class="material-symbols-outlined text-sm" data-icon="chevron_left">chevron_left</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Recent Local Files History -->
+<section class="space-y-4 pt-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="history">history</span>
+<h2 class="text-headline-md font-headline-md font-bold text-on-surface">الملفات المعالجة محلياً</h2>
+</div>
+<button class="text-body-sm font-body-sm text-primary hover:underline font-semibold flex items-center gap-1">
+<span>عرض السجل بالكامل (18)</span>
+<span class="material-symbols-outlined text-sm" data-icon="chevron_left">chevron_left</span>
+</button>
+</div>
+<!-- File List -->
+<div class="space-y-3">
+<!-- File Item 1 -->
+<div class="bg-surface-container rounded-xl border border-outline-variant p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-outline transition-colors">
+<div class="flex items-start gap-3.5">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high border border-outline-variant flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-2xl" data-icon="picture_as_pdf" style="font-variation-settings: 'FILL' 1;">picture_as_pdf</span>
+</div>
+<div class="space-y-1">
+<div class="flex flex-wrap items-center gap-2">
+<span class="text-body-lg font-headline-md font-bold text-on-surface text-right" dir="ltr">تقرير_الميزانية_السنوية_2024.pdf</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest border border-outline-variant text-label-mono-sm font-label-mono-sm text-primary">ضغط الملف</span>
+</div>
+<div class="flex flex-wrap items-center gap-3 text-label-mono-sm font-label-mono-sm text-on-surface-variant">
+<span class="text-primary font-semibold">14.2 MB -&gt; 2.8 MB (وفر 80%)</span>
+<span>•</span>
+<span>منذ ساعتين</span>
+<span>•</span>
+<span class="text-on-surface">مشفر محلياً</span>
+</div>
+</div>
+</div>
+<!-- Quick Action Buttons (44px min touch target) -->
+<div class="flex items-center gap-1 self-end md:self-center pt-2 md:pt-0 border-t border-outline-variant/60 md:border-none w-full md:w-auto justify-end">
+<button aria-label="معاينة الملف" class="w-11 h-11 rounded-lg border border-outline-variant hover:border-primary text-on-surface-variant hover:text-primary flex items-center justify-center transition-colors active:scale-95">
+<span class="material-symbols-outlined text-xl" data-icon="visibility">visibility</span>
+</button>
+<button aria-label="مشاركة آمنة" class="w-11 h-11 rounded-lg border border-outline-variant hover:border-primary text-on-surface-variant hover:text-primary flex items-center justify-center transition-colors active:scale-95">
+<span class="material-symbols-outlined text-xl" data-icon="share">share</span>
+</button>
+<button aria-label="إعادة تسمية" class="w-11 h-11 rounded-lg border border-outline-variant hover:border-primary text-on-surface-variant hover:text-primary flex items-center justify-center transition-colors active:scale-95">
+<span class="material-symbols-outlined text-xl" data-icon="edit">edit</span>
+</button>
+<button aria-label="حذف من الذاكرة" class="w-11 h-11 rounded-lg border border-outline-variant hover:border-error text-on-surface-variant hover:text-error flex items-center justify-center transition-colors active:scale-95">
+<span class="material-symbols-outlined text-xl" data-icon="delete">delete</span>
+</button>
+</div>
+</div>
+<!-- File Item 2 -->
+<div class="bg-surface-container rounded-xl border border-outline-variant p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-outline transition-colors">
+<div class="flex items-start gap-3.5">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high border border-outline-variant flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-2xl" data-icon="picture_as_pdf" style="font-variation-settings: 'FILL' 1;">picture_as_pdf</span>
+</div>
+<div class="space-y-1">
+<div class="flex flex-wrap items-center gap-2">
+<span class="text-body-lg font-headline-md font-bold text-on-surface text-right" dir="ltr">عقد_التأسيس_والملحقات_الرسمية.pdf</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest border border-outline-variant text-label-mono-sm font-label-mono-sm text-primary">دمج 4 ملفات</span>
+</div>
+<div class="flex flex-wrap items-center gap-3 text-label-mono-sm font-label-mono-sm text-on-surface-variant">
+<span>الحجم: 8.4 MB (28 صفحة)</span>
+<span>•</span>
+<span>أمس</span>
+<span>•</span>
+<span class="text-on-surface">AES-256</span>
+</div>
+</div>
+</div>
+<!-- Quick Action Buttons -->
+<div class="flex items-center gap-1 self-end md:self-center pt-2 md:pt-0 border-t border-outline-variant/60 md:border-none w-full md:w-auto justify-end">
+<button aria-label="معاينة الملف" class="w-11 h-11 rounded-lg border border-outline-variant hover:border-primary text-on-surface-variant hover:text-primary flex items-center justify-center transition-colors active:scale-95">
+<span class="material-symbols-outlined text-xl" data-icon="visibility">visibility</span>
+</button>
+<button aria-label="مشاركة آمنة" class="w-11 h-11 rounded-lg border border-outline-variant hover:border-primary text-on-surface-variant hover:text-primary flex items-center justify-center transition-colors active:scale-95">
+<span class="material-symbols-outlined text-xl" data-icon="share">share</span>
+</button>
+<button aria-label="إعادة تسمية" class="w-11 h-11 rounded-lg border border-outline-variant hover:border-primary text-on-surface-variant hover:text-primary flex items-center justify-center transition-colors active:scale-95">
+<span class="material-symbols-outlined text-xl" data-icon="edit">edit</span>
+</button>
+<button aria-label="حذف من الذاكرة" class="w-11 h-11 rounded-lg border border-outline-variant hover:border-error text-on-surface-variant hover:text-error flex items-center justify-center transition-colors active:scale-95">
+<span class="material-symbols-outlined text-xl" data-icon="delete">delete</span>
+</button>
+</div>
+</div>
+<!-- File Item 3 -->
+<div class="bg-surface-container rounded-xl border border-outline-variant p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-outline transition-colors">
+<div class="flex items-start gap-3.5">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high border border-outline-variant flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-2xl" data-icon="picture_as_pdf" style="font-variation-settings: 'FILL' 1;">picture_as_pdf</span>
+</div>
+<div class="space-y-1">
+<div class="flex flex-wrap items-center gap-2">
+<span class="text-body-lg font-headline-md font-bold text-on-surface text-right" dir="ltr">هوية_المشروع_والأصول_البصرية.pdf</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest border border-outline-variant text-label-mono-sm font-label-mono-sm text-primary">تحويل صور</span>
+</div>
+<div class="flex flex-wrap items-center gap-3 text-label-mono-sm font-label-mono-sm text-on-surface-variant">
+<span class="text-primary font-semibold">19.5 MB -&gt; 4.1 MB</span>
+<span>•</span>
+<span>منذ 3 أيام</span>
+<span>•</span>
+<span class="text-on-surface">دقة فائقة Vector</span>
+</div>
+</div>
+</div>
+<!-- Quick Action Buttons -->
+<div class="flex items-center gap-1 self-end md:self-center pt-2 md:pt-0 border-t border-outline-variant/60 md:border-none w-full md:w-auto justify-end">
+<button aria-label="معاينة الملف" class="w-11 h-11 rounded-lg border border-outline-variant hover:border-primary text-on-surface-variant hover:text-primary flex items-center justify-center transition-colors active:scale-95">
+<span class="material-symbols-outlined text-xl" data-icon="visibility">visibility</span>
+</button>
+<button aria-label="مشاركة آمنة" class="w-11 h-11 rounded-lg border border-outline-variant hover:border-primary text-on-surface-variant hover:text-primary flex items-center justify-center transition-colors active:scale-95">
+<span class="material-symbols-outlined text-xl" data-icon="share">share</span>
+</button>
+<button aria-label="إعادة تسمية" class="w-11 h-11 rounded-lg border border-outline-variant hover:border-primary text-on-surface-variant hover:text-primary flex items-center justify-center transition-colors active:scale-95">
+<span class="material-symbols-outlined text-xl" data-icon="edit">edit</span>
+</button>
+<button aria-label="حذف من الذاكرة" class="w-11 h-11 rounded-lg border border-outline-variant hover:border-error text-on-surface-variant hover:text-error flex items-center justify-center transition-colors active:scale-95">
+<span class="material-symbols-outlined text-xl" data-icon="delete">delete</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Tactical Security Guarantee Box -->
+<div class="rounded-xl border border-outline-variant bg-surface-container-low p-4 flex items-center gap-4 text-on-surface-variant">
+<div class="w-10 h-10 rounded-lg bg-surface-container border border-outline-variant flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined" data-icon="security">security</span>
+</div>
+<div class="text-body-sm font-body-sm leading-relaxed">
+<strong class="text-on-surface font-headline-md block mb-0.5">ضمان الخصوصية التقني المطلق:</strong>
+        يعمل محرك التطبيق بنظام Sandbox معزول دون أذونات وصول لشبكة الإنترنت. تظل جميع العمليات الحسابية محصورة داخل معالج جهازك (Client-Side Only).
+      </div>
+</div>
+</main>
+<!-- BottomNavBar Component (Shared Component: exact labels and icons) -->
+<nav aria-label="التنقل الرئيسي" class="fixed bottom-0 w-full z-50 flex justify-around items-center px-4 py-2 border-t border-outline-variant bg-surface-container-low">
+<!-- Item 1: المستندات (Active) -->
+<a class="flex flex-col items-center justify-center text-primary font-semibold min-h-[44px] min-w-[64px] px-2 py-1 active:scale-95 transition-transform duration-100" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="description" style="font-variation-settings: 'FILL' 1;">description</span>
+<span class="text-label-mono-sm font-label-mono-sm mt-0.5">المستندات</span>
+</a>
+<!-- Item 2: الأدوات (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary min-h-[44px] min-w-[64px] px-2 py-1 transition-colors duration-150 active:scale-95" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="build">build</span>
+<span class="text-label-mono-sm font-label-mono-sm mt-0.5">الأدوات</span>
+</a>
+<!-- Item 3: السجل (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary min-h-[44px] min-w-[64px] px-2 py-1 transition-colors duration-150 active:scale-95" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="history">history</span>
+<span class="text-label-mono-sm font-label-mono-sm mt-0.5">السجل</span>
+</a>
+<!-- Item 4: الإعدادات (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary min-h-[44px] min-w-[64px] px-2 py-1 transition-colors duration-150 active:scale-95" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="settings">settings</span>
+<span class="text-label-mono-sm font-label-mono-sm mt-0.5">الإعدادات</span>
+</a>
+</nav>
+<!-- Micro-interactions: Feedback snackbar script for touch targets -->
+<script>
+    document.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        // Simple visual click response for touch interfaces
+        btn.classList.add('opacity-80');
+        setTimeout(() => btn.classList.remove('opacity-80'), 150);
+      });
+    });
+  </script>
+</body></html>

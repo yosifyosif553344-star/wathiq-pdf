@@ -1,0 +1,109 @@
+name: Build Wathiq PDF Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-android-apk:
+    name: Build Release APK (وثيق PDF)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter Stable
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Generate Complete Android & iOS Platform Scaffolding
+        run: |
+          mkdir -p /tmp/wathiq_backup
+          cp pubspec.yaml /tmp/wathiq_backup/pubspec.yaml
+          cp -r lib /tmp/wathiq_backup/lib
+          cp -r test /tmp/wathiq_backup/test
+          rm -rf android ios
+          flutter create --platforms=android,ios --org com.wathiq --project-name wathiq_pdf .
+          cp /tmp/wathiq_backup/pubspec.yaml pubspec.yaml
+          rm -rf lib test
+          cp -r /tmp/wathiq_backup/lib lib
+          cp -r /tmp/wathiq_backup/test test
+
+      - name: Configure Offline-Only AndroidManifest (No Internet Permission)
+        run: |
+          python3 - << 'EOF'
+          manifest_path = "android/app/src/main/AndroidManifest.xml"
+          with open(manifest_path, "r", encoding="utf-8") as f:
+              content = f.read()
+
+          # إزالة أي صلاحية إنترنت لضمان الخصوصية المحلية 100%
+          lines = [
+              line for line in content.splitlines()
+              if "android.permission.INTERNET" not in line
+          ]
+          content = "\n".join(lines)
+
+          # تحديث اسم التطبيق إلى وثيق PDF وإضافة صلاحية الكاميرا للمسح الضوئي
+          content = content.replace('android:label="wathiq_pdf"', 'android:label="وثيق PDF"')
+          if "android.permission.CAMERA" not in content:
+              content = content.replace(
+                  "<application",
+                  '    <uses-permission android:name="android.permission.CAMERA" />\n    <application',
+                  1,
+              )
+
+          with open(manifest_path, "w", encoding="utf-8") as f:
+              f.write(content)
+          print("Updated AndroidManifest.xml:")
+          print(content)
+          EOF
+
+      - name: Install Flutter Dependencies
+        run: flutter pub get
+
+      - name: Run Unit Tests
+        run: flutter test
+
+      - name: Build Release APK
+        run: flutter build apk --release --no-tree-shake-icons
+
+      - name: Rename APK for Easy Download
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/Wathiq-PDF-v1.0.0.apk
+
+      - name: Upload APK to Workflow Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Wathiq-PDF-Release-APK
+          path: build/app/outputs/flutter-apk/Wathiq-PDF-v1.0.0.apk
+          if-no-files-found: error
+
+      - name: Publish APK to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: "وثيق PDF - إصدار الأندرويد (v1.0.${{ github.run_number }})"
+          body: |
+            ### تطبيق وثيق PDF (Wathiq PDF) - معالجة محلية 100% بدون إنترنت
+            - **دمج الملفات (Merge PDF)** مع السحب والإفلات
+            - **تقسيم الملفات (Split PDF)** بالنطاق أو فصل كل صفحة
+            - **ترتيب وحذف وتدوير الصفحات (Organize Pages)**
+            - **ضغط حجم الملف (Compress PDF)** بـ 3 مستويات مع عرض الحجم قبل وبعد
+            - **تحويل الصور والكاميرا إلى PDF (Scanner to PDF)**
+            - **خصوصية مطلقة:** يعمل داخل خيوط معالجة معزولة (`Dart Isolates`) ولا يطلب صلاحية الإنترنت.
+          files: build/app/outputs/flutter-apk/Wathiq-PDF-v1.0.0.apk
+          draft: false
+          prerelease: false
