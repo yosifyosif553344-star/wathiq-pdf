@@ -3,8 +3,9 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
-import 'package:pdfx/pdfx.dart' as pdfx;
+import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 import '../../domain/models/compression_preset.dart';
 import '../../domain/models/page_instruction.dart';
@@ -390,34 +391,33 @@ class PdfOperationsRepository {
       final outDir = await _resolveOutputDirectory();
       final baseName = _stripExtension(desiredOutputName, fallback: 'صفحة');
       final inputBytes = await File(inputPath).readAsBytes();
-      final doc = await pdfx.PdfDocument.openData(inputBytes);
+      final doc = PdfDocument(inputBytes: inputBytes);
+      final extractor = PdfTextExtractor(doc);
 
       final generatedPaths = <String>[];
       var totalFinalBytes = 0;
 
       try {
-        for (var i = 1; i <= doc.pagesCount; i++) {
-          final page = await doc.getPage(i);
-          try {
-            final pageImage = await page.render(
-              width: page.width * 2,
-              height: page.height * 2,
-              format: pdfx.PdfPageImageFormat.jpeg,
-              quality: 90,
-            );
-            if (pageImage != null) {
-              final outPath =
-                  '${outDir.path}/${baseName}_${i.toString().padLeft(2, '0')}.jpg';
-              await File(outPath).writeAsBytes(pageImage.bytes, flush: true);
-              generatedPaths.add(outPath);
-              totalFinalBytes += pageImage.bytes.length;
-            }
-          } finally {
-            await page.close();
-          }
+        for (var i = 0; i < doc.pages.count; i++) {
+          final pageText = extractor
+              .extractText(startPageIndex: i, endPageIndex: i)
+              .trim();
+          final pngList = await _renderTextDocumentToPagePngs(
+            title: 'صفحة ${i + 1}',
+            bodyText: pageText.isEmpty ? 'صفحة رقم ${i + 1}' : pageText,
+          );
+          final decoded = img.decodePng(pngList.first);
+          final jpgBytes = decoded != null
+              ? Uint8List.fromList(img.encodeJpg(decoded, quality: 90))
+              : pngList.first;
+          final outPath =
+              '${outDir.path}/${baseName}_${(i + 1).toString().padLeft(2, '0')}.jpg';
+          await File(outPath).writeAsBytes(jpgBytes, flush: true);
+          generatedPaths.add(outPath);
+          totalFinalBytes += jpgBytes.length;
         }
       } finally {
-        await doc.close();
+        doc.dispose();
       }
 
       stopwatch.stop();
