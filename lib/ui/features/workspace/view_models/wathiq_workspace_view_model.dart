@@ -8,6 +8,7 @@ import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 import '../../../../data/repositories/local_history_repository.dart';
 import '../../../../data/repositories/pdf_operations_repository.dart';
+import '../../../../data/services/pdf_isolate_service.dart';
 import '../../../../domain/models/compression_preset.dart';
 import '../../../../domain/models/page_instruction.dart';
 import '../../../../domain/models/pdf_operation_type.dart';
@@ -32,7 +33,7 @@ class SelectedInputFile {
   String get formattedSize => ProcessedFileRecord.formatBytes(sizeBytes);
 }
 
-/// حالات تحميل وعرض سجل العمليات الأخيرة (R-27: Empty, Loading, Error, Ready).
+/// حالات تحميل وعرض سجل العمليات الأخيرة.
 enum HistoryViewState {
   loading,
   empty,
@@ -40,7 +41,7 @@ enum HistoryViewState {
   error,
 }
 
-/// ViewModel الرئيسي لإدارة حالة تطبيق "وثيق PDF" وفصل منطق المعالجة عن الواجهة.
+/// ViewModel الرئيسي لإدارة حالة تطبيق "وثيق PDF" لجميع الأدوات (26 أداة).
 class WathiqWorkspaceViewModel extends ChangeNotifier {
   WathiqWorkspaceViewModel({
     required PdfOperationsRepository operationsRepository,
@@ -61,13 +62,15 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
   PdfOperationType get activeOperation => _activeOperation;
 
   final List<SelectedInputFile> _selectedFiles = [];
-  List<SelectedInputFile> get selectedFiles => List.unmodifiable(_selectedFiles);
+  List<SelectedInputFile> get selectedFiles =>
+      List.unmodifiable(_selectedFiles);
 
   final List<String> _selectedImages = [];
   List<String> get selectedImages => List.unmodifiable(_selectedImages);
 
   final List<PdfPageInstruction> _pageInstructions = [];
-  List<PdfPageInstruction> get pageInstructions => List.unmodifiable(_pageInstructions);
+  List<PdfPageInstruction> get pageInstructions =>
+      List.unmodifiable(_pageInstructions);
 
   CompressionLevel _compressionLevel = CompressionLevel.medium;
   CompressionLevel get compressionLevel => _compressionLevel;
@@ -81,7 +84,31 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
   bool _burstSplitEachPage = false;
   bool get burstSplitEachPage => _burstSplitEachPage;
 
-  String _outputFileName = 'وثيقة_معالجة_محلياً.pdf';
+  int _bulkRotationDegrees = 90;
+  int get bulkRotationDegrees => _bulkRotationDegrees;
+
+  PageNumberPosition _pageNumberPosition = PageNumberPosition.bottomCenter;
+  PageNumberPosition get pageNumberPosition => _pageNumberPosition;
+
+  String _watermarkOrEditText = 'سري للغاية';
+  String get watermarkOrEditText => _watermarkOrEditText;
+
+  double _watermarkOpacity = 0.35;
+  double get watermarkOpacity => _watermarkOpacity;
+
+  String _pdfPassword = '';
+  String get pdfPassword => _pdfPassword;
+
+  String _createPdfTitle = 'مستند جديد';
+  String get createPdfTitle => _createPdfTitle;
+
+  String _createPdfBody = '';
+  String get createPdfBody => _createPdfBody;
+
+  final List<Offset?> _signaturePoints = [];
+  List<Offset?> get signaturePoints => List.unmodifiable(_signaturePoints);
+
+  String _outputFileName = 'وثيقة.pdf';
   String get outputFileName => _outputFileName;
 
   bool _isProcessing = false;
@@ -103,23 +130,32 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
   String? get historyErrorMessage => _historyErrorMessage;
 
   List<ProcessedFileRecord> _recentRecords = const [];
-  List<ProcessedFileRecord> get recentRecords => List.unmodifiable(_recentRecords);
+  List<ProcessedFileRecord> get recentRecords =>
+      List.unmodifiable(_recentRecords);
 
-  /// إجمالي حجم الملفات المختارة حالياً بالبايت.
   int get totalSelectedBytes =>
       _selectedFiles.fold(0, (sum, item) => sum + item.sizeBytes);
 
-  /// إجمالي عدد الصفحات في الملفات المختارة حالياً.
   int get totalSelectedPages =>
       _selectedFiles.fold(0, (sum, item) => sum + item.pageCount);
 
-  /// الحجم المتوقع بعد الضغط بناءً على المستوى المختار.
   int get estimatedCompressedBytes {
     if (totalSelectedBytes <= 0) return 0;
     return (totalSelectedBytes * _compressionLevel.expectedRatio).round();
   }
 
-  /// تهيئة وتحميل سجل العمليات الأخيرة من التخزين المحلي.
+  bool get hasRequiredInput {
+    return switch (_activeOperation.inputKind) {
+      PdfOperationInputKind.multiplePdfs => _selectedFiles.length >= 2,
+      PdfOperationInputKind.singlePdf ||
+      PdfOperationInputKind.officeDocument =>
+        _selectedFiles.isNotEmpty,
+      PdfOperationInputKind.images => _selectedImages.isNotEmpty,
+      PdfOperationInputKind.none => _createPdfBody.trim().isNotEmpty ||
+          _createPdfTitle.trim().isNotEmpty,
+    };
+  }
+
   Future<void> initializeHistory() async {
     _historyState = HistoryViewState.loading;
     _historyErrorMessage = null;
@@ -130,15 +166,13 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
       _historyState = _recentRecords.isEmpty
           ? HistoryViewState.empty
           : HistoryViewState.ready;
-    } catch (e) {
+    } catch (_) {
       _historyState = HistoryViewState.error;
-      _historyErrorMessage =
-          'تعذرت قراءة سجل العمليات المحلية من ذاكرة الجهاز. تحقق من صلاحيات التخزين.';
+      _historyErrorMessage = 'تعذرت قراءة السجل المحلي.';
     }
     notifyListeners();
   }
 
-  /// تبديل المظهر بين الوضع الليلي والنهاري (R-21, R-34).
   void toggleThemeMode() {
     _themeMode =
         _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
@@ -148,7 +182,13 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
   void selectOperation(PdfOperationType operation) {
     _activeOperation = operation;
     _workspaceError = null;
-    _outputFileName = '${operation.shortActionLabel.replaceAll(' ', '_')}_${DateTime.now().hour}${DateTime.now().minute}.pdf';
+    _selectedFiles.clear();
+    _selectedImages.clear();
+    _pageInstructions.clear();
+    _signaturePoints.clear();
+    final stamp = '${DateTime.now().hour}${DateTime.now().minute}';
+    _outputFileName =
+        '${operation.shortActionLabel.replaceAll(' ', '_')}_$stamp';
     notifyListeners();
   }
 
@@ -174,6 +214,51 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setBulkRotationDegrees(int degrees) {
+    _bulkRotationDegrees = degrees;
+    notifyListeners();
+  }
+
+  void setPageNumberPosition(PageNumberPosition position) {
+    _pageNumberPosition = position;
+    notifyListeners();
+  }
+
+  void setWatermarkOrEditText(String value) {
+    _watermarkOrEditText = value;
+    notifyListeners();
+  }
+
+  void setWatermarkOpacity(double value) {
+    _watermarkOpacity = value;
+    notifyListeners();
+  }
+
+  void setPdfPassword(String value) {
+    _pdfPassword = value;
+    notifyListeners();
+  }
+
+  void setCreatePdfTitle(String value) {
+    _createPdfTitle = value;
+    notifyListeners();
+  }
+
+  void setCreatePdfBody(String value) {
+    _createPdfBody = value;
+    notifyListeners();
+  }
+
+  void addSignaturePoint(Offset? point) {
+    _signaturePoints.add(point);
+    notifyListeners();
+  }
+
+  void clearSignature() {
+    _signaturePoints.clear();
+    notifyListeners();
+  }
+
   void setOutputFileName(String value) {
     _outputFileName = value;
     notifyListeners();
@@ -184,22 +269,25 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// اختيار ملف أو عدة ملفات PDF من ذاكرة الجهاز.
+  /// اختيار ملف أو عدة ملفات (PDF أو أوفيس حسب الأداة المختارة).
   Future<void> pickPdfFiles({bool allowMultiple = true}) async {
     _workspaceError = null;
     try {
+      final extensions = _activeOperation.allowedOfficeExtensions;
       final List<PlatformFile> pickedFiles;
       if (allowMultiple) {
         pickedFiles = await FilePicker.pickFiles(
           type: FileType.custom,
-          allowedExtensions: const ['pdf'],
+          allowedExtensions: extensions,
         );
       } else {
         final single = await FilePicker.pickFile(
           type: FileType.custom,
-          allowedExtensions: const ['pdf'],
+          allowedExtensions: extensions,
         );
-        pickedFiles = single != null ? <PlatformFile>[single] : const <PlatformFile>[];
+        pickedFiles = single != null
+            ? <PlatformFile>[single]
+            : const <PlatformFile>[];
       }
       if (pickedFiles.isEmpty) return;
 
@@ -215,12 +303,14 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
 
         final bytes = await file.readAsBytes();
         var pagesCount = 1;
-        try {
-          final doc = PdfDocument(inputBytes: bytes);
-          pagesCount = doc.pages.count;
-          doc.dispose();
-        } catch (_) {
-          pagesCount = 1;
+        if (path.toLowerCase().endsWith('.pdf')) {
+          try {
+            final doc = PdfDocument(inputBytes: bytes);
+            pagesCount = doc.pages.count;
+            doc.dispose();
+          } catch (_) {
+            pagesCount = 1;
+          }
         }
 
         _selectedFiles.add(
@@ -235,31 +325,38 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
 
       _rebuildPageInstructionsFromPrimaryFile();
       notifyListeners();
-    } catch (e) {
-      _workspaceError = 'تعذر استيراد ملف الـ PDF المختار. تأكد من سلامة الملف وعدم تلفه.';
+    } catch (_) {
+      _workspaceError = 'تعذر استيراد الملف المختار.';
       notifyListeners();
     }
   }
 
-  /// استيراد صور متعددة من المعرض (JPG, PNG, WebP).
+  /// استيراد صور من المعرض.
   Future<void> pickImagesFromGallery() async {
     _workspaceError = null;
     try {
       final picker = ImagePicker();
-      final pickedList = await picker.pickMultiImage();
-      if (pickedList.isEmpty) return;
-      for (final imgFile in pickedList) {
-        _selectedImages.add(imgFile.path);
+      if (_activeOperation == PdfOperationType.imagesToPdf) {
+        final pickedList = await picker.pickMultiImage();
+        if (pickedList.isEmpty) return;
+        for (final imgFile in pickedList) {
+          _selectedImages.add(imgFile.path);
+        }
+      } else {
+        final single = await picker.pickImage(source: ImageSource.gallery);
+        if (single == null) return;
+        _selectedImages
+          ..clear()
+          ..add(single.path);
       }
-      _activeOperation = PdfOperationType.imagesToPdf;
       notifyListeners();
     } catch (_) {
-      _workspaceError = 'تعذر الوصول إلى معرض الصور المحلي.';
+      _workspaceError = 'تعذر الوصول إلى معرض الصور.';
       notifyListeners();
     }
   }
 
-  /// تشغيل الماسح الضوئي بالكاميرا مع قص الحواف التلقائي.
+  /// التقاط صورة بالكاميرا.
   Future<void> scanDocumentWithCamera() async {
     _workspaceError = null;
     try {
@@ -270,16 +367,13 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
       );
       if (captured == null) return;
       _selectedImages.add(captured.path);
-      _activeOperation = PdfOperationType.imagesToPdf;
       notifyListeners();
     } catch (_) {
-      _workspaceError =
-          'تعذر تشغيل الماسح الضوئي للكاميرا. تأكد من منح صلاحية الكاميرا للتطبيق.';
+      _workspaceError = 'تعذر تشغيل الكاميرا.';
       notifyListeners();
     }
   }
 
-  /// إعادة ترتيب الملفات المختارة للدمج عبر السحب والإفلات أو أزرار لوحة المفاتيح.
   void reorderSelectedFiles(int oldIndex, int newIndex) {
     if (oldIndex < 0 || oldIndex >= _selectedFiles.length) return;
     var targetIndex = newIndex;
@@ -314,7 +408,6 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
     }
   }
 
-  /// إعادة ترتيب صفحات الوثيقة عبر السحب والإفلات.
   void reorderPages(int oldIndex, int newIndex) {
     if (oldIndex < 0 || oldIndex >= _pageInstructions.length) return;
     var target = newIndex;
@@ -325,29 +418,20 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// تحديد أو إلغاء تحديد صفحة في شبكة المصغرات.
   void togglePageSelection(int index) {
     if (index < 0 || index >= _pageInstructions.length) return;
     final current = _pageInstructions[index];
-    _pageInstructions[index] = current.copyWith(isSelected: !current.isSelected);
+    _pageInstructions[index] =
+        current.copyWith(isSelected: !current.isSelected);
     notifyListeners();
   }
 
-  void selectAllPages(bool selectAll) {
-    for (var i = 0; i < _pageInstructions.length; i++) {
-      _pageInstructions[i] = _pageInstructions[i].copyWith(isSelected: selectAll);
-    }
-    notifyListeners();
-  }
-
-  /// تدوير صفحة مفردة بزاوية 90 أو 180 درجة.
   void rotatePageAt(int index, int deltaDegrees) {
     if (index < 0 || index >= _pageInstructions.length) return;
     _pageInstructions[index] = _pageInstructions[index].rotateBy(deltaDegrees);
     notifyListeners();
   }
 
-  /// تدوير جميع الصفحات المحددة بضغطة واحدة.
   void rotateSelectedPages(int deltaDegrees) {
     for (var i = 0; i < _pageInstructions.length; i++) {
       if (_pageInstructions[i].isSelected) {
@@ -357,10 +441,9 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// حذف صفحة مفردة مع منع إفراغ الوثيقة بالكامل.
   void deletePageAt(int index) {
     if (_pageInstructions.length <= 1) {
-      _workspaceError = 'لا يمكن حذف جميع صفحات الوثيقة. يجب الإبقاء على صفحة واحدة على الأقل.';
+      _workspaceError = 'يجب الإبقاء على صفحة واحدة على الأقل.';
       notifyListeners();
       return;
     }
@@ -368,11 +451,10 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// حذف جميع الصفحات المحددة دفعة واحدة.
   void deleteSelectedPages() {
     final remaining = _pageInstructions.where((p) => !p.isSelected).toList();
     if (remaining.isEmpty) {
-      _workspaceError = 'لا يمكن حذف كافة الصفحات. أبقِ صفحة واحدة على الأقل غير محددة.';
+      _workspaceError = 'أبقِ صفحة واحدة على الأقل غير محددة.';
       notifyListeners();
       return;
     }
@@ -382,34 +464,26 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// تنفيذ العملية النشطة داخل Isolate خلفي وحفظ النتيجة محلياً.
+  /// تنفيذ الأداة النشطة وحفظ النتيجة محلياً.
   Future<ProcessedFileRecord?> executeActiveOperation() async {
     _workspaceError = null;
     _lastCompletedRecord = null;
 
-    if (_activeOperation == PdfOperationType.imagesToPdf) {
-      if (_selectedImages.isEmpty) {
-        _workspaceError = 'اختر صورة واحدة على الأقل من المعرض أو التقط وثيقة بالكاميرا أولاً.';
-        notifyListeners();
-        return null;
-      }
-    } else if (_activeOperation == PdfOperationType.merge) {
-      if (_selectedFiles.length < 2) {
-        _workspaceError = 'اختر ملفين على الأقل من ذاكرة الجهاز لتنفيذ عملية الدمج.';
-        notifyListeners();
-        return null;
-      }
-    } else {
-      if (_selectedFiles.isEmpty) {
-        _workspaceError = 'اختر ملف PDF من ذاكرة الجهاز أولاً لبدء المعالجة.';
-        notifyListeners();
-        return null;
-      }
+    if (!hasRequiredInput) {
+      _workspaceError = 'يرجى استكمال المدخلات المطلوبة أولاً.';
+      notifyListeners();
+      return null;
+    }
+
+    if (_activeOperation == PdfOperationType.protectPdf &&
+        _pdfPassword.trim().isEmpty) {
+      _workspaceError = 'أدخل كلمة المرور لحماية الملف.';
+      notifyListeners();
+      return null;
     }
 
     _isProcessing = true;
-    _processingStatusText =
-        'جاري تنفيذ ${_activeOperation.arabicTitle} داخل خيط معالجة معزول (Isolate)...';
+    _processingStatusText = 'جارٍ تنفيذ ${_activeOperation.arabicTitle}...';
     notifyListeners();
 
     try {
@@ -421,6 +495,7 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
             inputPaths: _selectedFiles.map((e) => e.path).toList(),
             desiredOutputName: _outputFileName,
           );
+
         case PdfOperationType.split:
           final primary = _selectedFiles.first;
           var pagesToExtract = <int>[];
@@ -443,34 +518,165 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
             selectedPages: pagesToExtract,
             burstEachPageIntoSeparateFile: _burstSplitEachPage,
           );
+
         case PdfOperationType.organize:
-          final primary = _selectedFiles.first;
           record = await _operationsRepository.organizeFilePages(
-            inputPath: primary.path,
+            inputPath: _selectedFiles.first.path,
             desiredOutputName: _outputFileName,
             instructions: _pageInstructions,
           );
+
+        case PdfOperationType.rotatePdf:
+          record = await _operationsRepository.rotateFile(
+            inputPath: _selectedFiles.first.path,
+            desiredOutputName: _outputFileName,
+            rotationDegrees: _bulkRotationDegrees,
+          );
+
         case PdfOperationType.compress:
-          final primary = _selectedFiles.first;
           record = await _operationsRepository.compressFile(
-            inputPath: primary.path,
+            inputPath: _selectedFiles.first.path,
             desiredOutputName: _outputFileName,
             level: _compressionLevel,
           );
+
         case PdfOperationType.imagesToPdf:
           record = await _operationsRepository.convertImagesToPdf(
             imagePaths: _selectedImages,
             desiredOutputName: _outputFileName,
             options: _scannerOptions,
           );
+
+        case PdfOperationType.pageNumbers:
+          record = await _operationsRepository.addPageNumbers(
+            inputPath: _selectedFiles.first.path,
+            desiredOutputName: _outputFileName,
+            position: _pageNumberPosition,
+          );
+
+        case PdfOperationType.watermark:
+          final png = await _operationsRepository.renderOverlayPng(
+            text: _watermarkOrEditText,
+            diagonal: true,
+          );
+          record = await _operationsRepository.stampTextOrSignatureOnPdf(
+            inputPath: _selectedFiles.first.path,
+            desiredOutputName: _outputFileName,
+            operationType: PdfOperationType.watermark,
+            overlayPngBytes: png,
+            opacity: _watermarkOpacity,
+            allPages: true,
+            centerDiagonal: true,
+          );
+
+        case PdfOperationType.editPdf:
+          final png = await _operationsRepository.renderOverlayPng(
+            text: _watermarkOrEditText,
+            diagonal: false,
+          );
+          record = await _operationsRepository.stampTextOrSignatureOnPdf(
+            inputPath: _selectedFiles.first.path,
+            desiredOutputName: _outputFileName,
+            operationType: PdfOperationType.editPdf,
+            overlayPngBytes: png,
+            opacity: 1.0,
+            allPages: false,
+            centerDiagonal: false,
+          );
+
+        case PdfOperationType.signPdf:
+          final png = await _operationsRepository.renderOverlayPng(
+            text: _watermarkOrEditText.isEmpty ? 'توقيع معتمد' : _watermarkOrEditText,
+            signaturePoints: _signaturePoints,
+            diagonal: false,
+          );
+          record = await _operationsRepository.stampTextOrSignatureOnPdf(
+            inputPath: _selectedFiles.first.path,
+            desiredOutputName: _outputFileName,
+            operationType: PdfOperationType.signPdf,
+            overlayPngBytes: png,
+            opacity: 1.0,
+            allPages: false,
+            centerDiagonal: false,
+          );
+
+        case PdfOperationType.protectPdf:
+          record = await _operationsRepository.protectFile(
+            inputPath: _selectedFiles.first.path,
+            desiredOutputName: _outputFileName,
+            password: _pdfPassword,
+          );
+
+        case PdfOperationType.unlockPdf:
+          record = await _operationsRepository.unlockFile(
+            inputPath: _selectedFiles.first.path,
+            desiredOutputName: _outputFileName,
+            password: _pdfPassword,
+          );
+
+        case PdfOperationType.repairPdf:
+        case PdfOperationType.ocrPdf:
+          record = await _operationsRepository.repairFile(
+            inputPath: _selectedFiles.first.path,
+            desiredOutputName: _outputFileName,
+            operationType: _activeOperation,
+          );
+
+        case PdfOperationType.extractText:
+        case PdfOperationType.pdfToWord:
+        case PdfOperationType.pdfToPowerPoint:
+        case PdfOperationType.pdfToExcel:
+          record = await _operationsRepository.exportPdfTextOrOffice(
+            inputPath: _selectedFiles.first.path,
+            desiredOutputName: _outputFileName,
+            operationType: _activeOperation,
+          );
+
+        case PdfOperationType.wordToPdf:
+        case PdfOperationType.powerPointToPdf:
+        case PdfOperationType.excelToPdf:
+          final primary = _selectedFiles.first;
+          final extractedText = await _operationsRepository.isolateService
+              .extractReadableTextFromOfficeFile(primary.path);
+          record = await _operationsRepository.createOrConvertTextToPdf(
+            title: primary.name,
+            bodyText: extractedText,
+            desiredOutputName: _outputFileName,
+            operationType: _activeOperation,
+            originalBytesHint: primary.sizeBytes,
+          );
+
+        case PdfOperationType.createPdf:
+          record = await _operationsRepository.createOrConvertTextToPdf(
+            title: _createPdfTitle,
+            bodyText: _createPdfBody,
+            desiredOutputName: _outputFileName,
+            operationType: PdfOperationType.createPdf,
+          );
+
+        case PdfOperationType.pdfToJpg:
+          record = await _operationsRepository.convertPdfToJpgImages(
+            inputPath: _selectedFiles.first.path,
+            desiredOutputName: _outputFileName,
+          );
+
+        case PdfOperationType.compressImage:
+        case PdfOperationType.convertToJpg:
+        case PdfOperationType.convertFromJpg:
+          record = await _operationsRepository.processSingleImage(
+            inputImagePath: _selectedImages.first,
+            desiredOutputName: _outputFileName,
+            operationType: _activeOperation,
+            level: _compressionLevel,
+          );
       }
 
       _lastCompletedRecord = record;
       await initializeHistory();
       return record;
-    } catch (e) {
+    } catch (_) {
       _workspaceError =
-          'تعذر إكمال المعالجة المحلية للملف المختار. تأكد من توفر مساحة كافية على الجهاز.';
+          'تعذر إكمال المعالجة. تحقق من صلاحية الملف أو كلمة المرور.';
       return null;
     } finally {
       _isProcessing = false;
@@ -479,23 +685,20 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
     }
   }
 
-  /// فتح ملف من السجل المحلي.
   Future<void> openProcessedFile(ProcessedFileRecord record) async {
     await OpenFilex.open(record.filePath);
   }
 
-  /// مشاركة ملف من السجل المحلي عبر تطبيقات النظام.
   Future<void> shareProcessedFile(ProcessedFileRecord record) async {
     final file = File(record.filePath);
     if (await file.exists()) {
       await Share.shareXFiles(
         [XFile(record.filePath)],
-        text: 'ملف معالج محلياً عبر تطبيق وثيق PDF: ${record.fileName}',
+        text: record.fileName,
       );
     }
   }
 
-  /// إعادة تسمية ملف في السجل المحلي.
   Future<void> renameProcessedFile({
     required String id,
     required String newName,
@@ -511,7 +714,6 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// حذف سجل ملف من العمليات الأخيرة.
   Future<void> deleteProcessedFile({
     required String id,
     bool deleteFromDisk = false,

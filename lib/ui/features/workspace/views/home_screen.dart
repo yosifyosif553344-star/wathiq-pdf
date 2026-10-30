@@ -7,18 +7,39 @@ import '../../../core/widgets/wathiq_shield_logo.dart';
 import '../view_models/wathiq_workspace_view_model.dart';
 import 'tool_workspace_screen.dart';
 
-/// الشاشة الرئيسية: قائمة أدوات بسيطة + آخر الملفات.
+/// الشاشة الرئيسية: قائمة بسيطة بجميع الأدوات (26 أداة) + آخر الملفات.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key, required this.viewModel});
 
   final WathiqWorkspaceViewModel viewModel;
 
   static const _icons = <PdfOperationType, IconData>{
-    PdfOperationType.merge: Icons.merge_type_outlined,
-    PdfOperationType.split: Icons.call_split_outlined,
-    PdfOperationType.organize: Icons.grid_view_outlined,
     PdfOperationType.compress: Icons.compress_outlined,
+    PdfOperationType.split: Icons.call_split_outlined,
+    PdfOperationType.merge: Icons.merge_type_outlined,
+    PdfOperationType.pdfToWord: Icons.article_outlined,
+    PdfOperationType.pdfToPowerPoint: Icons.slideshow_outlined,
+    PdfOperationType.pdfToExcel: Icons.table_chart_outlined,
+    PdfOperationType.wordToPdf: Icons.description_outlined,
+    PdfOperationType.powerPointToPdf: Icons.present_to_all_outlined,
+    PdfOperationType.excelToPdf: Icons.grid_on_outlined,
+    PdfOperationType.editPdf: Icons.edit_note_outlined,
+    PdfOperationType.pdfToJpg: Icons.image_outlined,
     PdfOperationType.imagesToPdf: Icons.photo_camera_outlined,
+    PdfOperationType.pageNumbers: Icons.format_list_numbered_rtl,
+    PdfOperationType.watermark: Icons.branding_watermark_outlined,
+    PdfOperationType.rotatePdf: Icons.rotate_right_outlined,
+    PdfOperationType.unlockPdf: Icons.lock_open_outlined,
+    PdfOperationType.protectPdf: Icons.lock_outline,
+    PdfOperationType.organize: Icons.grid_view_outlined,
+    PdfOperationType.repairPdf: Icons.build_outlined,
+    PdfOperationType.signPdf: Icons.draw_outlined,
+    PdfOperationType.extractText: Icons.text_snippet_outlined,
+    PdfOperationType.ocrPdf: Icons.document_scanner_outlined,
+    PdfOperationType.createPdf: Icons.note_add_outlined,
+    PdfOperationType.compressImage: Icons.photo_size_select_small_outlined,
+    PdfOperationType.convertToJpg: Icons.transform_outlined,
+    PdfOperationType.convertFromJpg: Icons.collections_outlined,
   };
 
   void _open(BuildContext context, PdfOperationType tool) {
@@ -101,7 +122,10 @@ class HomeScreen extends StatelessWidget {
                         child: Card(
                           child: ListTile(
                             minVerticalPadding: 14,
-                            leading: Icon(_icons[tool], color: palette.accent),
+                            leading: Icon(
+                              _icons[tool] ?? Icons.picture_as_pdf_outlined,
+                              color: palette.accent,
+                            ),
                             title: Text(
                               tool.arabicTitle,
                               style: TextStyle(

@@ -1,5 +1,10 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
+import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:pdfx/pdfx.dart' as pdfx;
 
 import '../../domain/models/compression_preset.dart';
 import '../../domain/models/page_instruction.dart';
@@ -10,7 +15,7 @@ import '../services/pdf_isolate_service.dart';
 import '../services/temp_cache_cleanup_service.dart';
 import 'local_history_repository.dart';
 
-/// مستودع تنفيذ عمليات الـ PDF المحلية مع ضمان تفريغ الكاش وتحديث السجل تلقائياً.
+/// مستودع تنفيذ جميع عمليات الـ PDF والأوفيس والصور المحلية مع تفريغ الكاش وتحديث السجل تلقائياً.
 class PdfOperationsRepository {
   PdfOperationsRepository({
     required PdfIsolateService isolateService,
@@ -24,6 +29,8 @@ class PdfOperationsRepository {
   final TempCacheCleanupService _cacheCleanupService;
   final LocalHistoryRepository _historyRepository;
 
+  PdfIsolateService get isolateService => _isolateService;
+
   Future<Directory> _resolveOutputDirectory() async {
     final docsDir = await getApplicationDocumentsDirectory();
     final wathiqDir = Directory('${docsDir.path}/Wathiq_PDF');
@@ -33,34 +40,42 @@ class PdfOperationsRepository {
     return wathiqDir;
   }
 
+  Future<ProcessedFileRecord> _saveToHistory({
+    required String fileName,
+    required PdfOperationType operationType,
+    required IsolatePdfOutput result,
+  }) async {
+    final record = ProcessedFileRecord(
+      id: 'op_${DateTime.now().microsecondsSinceEpoch}',
+      fileName: fileName,
+      filePath: result.primaryPath,
+      operationType: operationType,
+      originalSizeBytes: result.originalSizeBytes,
+      finalSizeBytes: result.finalSizeBytes,
+      pageCount: result.pageCount,
+      processedAt: DateTime.now(),
+      durationMs: result.durationMs,
+    );
+    await _historyRepository.addRecord(record);
+    return record;
+  }
+
   Future<ProcessedFileRecord> mergeFiles({
     required List<String> inputPaths,
     required String desiredOutputName,
   }) async {
     try {
       final outDir = await _resolveOutputDirectory();
-      final cleanName = _sanitizePdfName(desiredOutputName, fallback: 'وثيقة_مدمجة');
-      final outputPath = '${outDir.path}/$cleanName';
-
+      final cleanName = _sanitizeExt(desiredOutputName, '.pdf', 'مدمج');
       final result = await _isolateService.mergePdfs(
         inputPaths: inputPaths,
-        outputPath: outputPath,
+        outputPath: '${outDir.path}/$cleanName',
       );
-
-      final record = ProcessedFileRecord(
-        id: 'op_${DateTime.now().microsecondsSinceEpoch}',
+      return _saveToHistory(
         fileName: cleanName,
-        filePath: result.primaryPath,
         operationType: PdfOperationType.merge,
-        originalSizeBytes: result.originalSizeBytes,
-        finalSizeBytes: result.finalSizeBytes,
-        pageCount: result.pageCount,
-        processedAt: DateTime.now(),
-        durationMs: result.durationMs,
+        result: result,
       );
-
-      await _historyRepository.addRecord(record);
-      return record;
     } finally {
       await _cacheCleanupService.purgeTemporaryFiles();
     }
@@ -74,8 +89,7 @@ class PdfOperationsRepository {
   }) async {
     try {
       final outDir = await _resolveOutputDirectory();
-      final baseName = _stripPdfExtension(desiredOutputName);
-
+      final baseName = _stripExtension(desiredOutputName, fallback: 'مقسم');
       final result = await _isolateService.splitPdf(
         inputPath: inputPath,
         outputDirectory: outDir.path,
@@ -83,25 +97,14 @@ class PdfOperationsRepository {
         oneBasedPages: selectedPages,
         burstEachPageIntoSeparateFile: burstEachPageIntoSeparateFile,
       );
-
       final displayFileName = burstEachPageIntoSeparateFile
-          ? '${baseName}_(${result.outputFilePaths.length}_ملفات_مستقلة).pdf'
+          ? '${baseName}_(${result.outputFilePaths.length}_ملفات).pdf'
           : '$baseName.pdf';
-
-      final record = ProcessedFileRecord(
-        id: 'op_${DateTime.now().microsecondsSinceEpoch}',
+      return _saveToHistory(
         fileName: displayFileName,
-        filePath: result.primaryPath,
         operationType: PdfOperationType.split,
-        originalSizeBytes: result.originalSizeBytes,
-        finalSizeBytes: result.finalSizeBytes,
-        pageCount: result.pageCount,
-        processedAt: DateTime.now(),
-        durationMs: result.durationMs,
+        result: result,
       );
-
-      await _historyRepository.addRecord(record);
-      return record;
     } finally {
       await _cacheCleanupService.purgeTemporaryFiles();
     }
@@ -114,29 +117,40 @@ class PdfOperationsRepository {
   }) async {
     try {
       final outDir = await _resolveOutputDirectory();
-      final cleanName = _sanitizePdfName(desiredOutputName, fallback: 'وثيقة_منظمة');
-      final outputPath = '${outDir.path}/$cleanName';
-
+      final cleanName = _sanitizeExt(desiredOutputName, '.pdf', 'منظم');
       final result = await _isolateService.organizePages(
         inputPath: inputPath,
-        outputPath: outputPath,
+        outputPath: '${outDir.path}/$cleanName',
         instructions: instructions,
       );
-
-      final record = ProcessedFileRecord(
-        id: 'op_${DateTime.now().microsecondsSinceEpoch}',
+      return _saveToHistory(
         fileName: cleanName,
-        filePath: result.primaryPath,
         operationType: PdfOperationType.organize,
-        originalSizeBytes: result.originalSizeBytes,
-        finalSizeBytes: result.finalSizeBytes,
-        pageCount: result.pageCount,
-        processedAt: DateTime.now(),
-        durationMs: result.durationMs,
+        result: result,
       );
+    } finally {
+      await _cacheCleanupService.purgeTemporaryFiles();
+    }
+  }
 
-      await _historyRepository.addRecord(record);
-      return record;
+  Future<ProcessedFileRecord> rotateFile({
+    required String inputPath,
+    required String desiredOutputName,
+    required int rotationDegrees,
+  }) async {
+    try {
+      final outDir = await _resolveOutputDirectory();
+      final cleanName = _sanitizeExt(desiredOutputName, '.pdf', 'مدور');
+      final result = await _isolateService.rotateAllPages(
+        inputPath: inputPath,
+        outputPath: '${outDir.path}/$cleanName',
+        rotationDegrees: rotationDegrees,
+      );
+      return _saveToHistory(
+        fileName: cleanName,
+        operationType: PdfOperationType.rotatePdf,
+        result: result,
+      );
     } finally {
       await _cacheCleanupService.purgeTemporaryFiles();
     }
@@ -149,29 +163,17 @@ class PdfOperationsRepository {
   }) async {
     try {
       final outDir = await _resolveOutputDirectory();
-      final cleanName = _sanitizePdfName(desiredOutputName, fallback: 'وثيقة_مضغوطة');
-      final outputPath = '${outDir.path}/$cleanName';
-
+      final cleanName = _sanitizeExt(desiredOutputName, '.pdf', 'مضغوط');
       final result = await _isolateService.compressPdf(
         inputPath: inputPath,
-        outputPath: outputPath,
+        outputPath: '${outDir.path}/$cleanName',
         level: level,
       );
-
-      final record = ProcessedFileRecord(
-        id: 'op_${DateTime.now().microsecondsSinceEpoch}',
+      return _saveToHistory(
         fileName: cleanName,
-        filePath: result.primaryPath,
         operationType: PdfOperationType.compress,
-        originalSizeBytes: result.originalSizeBytes,
-        finalSizeBytes: result.finalSizeBytes,
-        pageCount: result.pageCount,
-        processedAt: DateTime.now(),
-        durationMs: result.durationMs,
+        result: result,
       );
-
-      await _historyRepository.addRecord(record);
-      return record;
     } finally {
       await _cacheCleanupService.purgeTemporaryFiles();
     }
@@ -184,45 +186,440 @@ class PdfOperationsRepository {
   }) async {
     try {
       final outDir = await _resolveOutputDirectory();
-      final cleanName = _sanitizePdfName(desiredOutputName, fallback: 'مسح_ضوئي');
-      final outputPath = '${outDir.path}/$cleanName';
-
+      final cleanName = _sanitizeExt(desiredOutputName, '.pdf', 'صور_PDF');
       final result = await _isolateService.convertImagesToPdf(
         imagePaths: imagePaths,
-        outputPath: outputPath,
+        outputPath: '${outDir.path}/$cleanName',
         options: options,
       );
-
-      final record = ProcessedFileRecord(
-        id: 'op_${DateTime.now().microsecondsSinceEpoch}',
+      return _saveToHistory(
         fileName: cleanName,
-        filePath: result.primaryPath,
         operationType: PdfOperationType.imagesToPdf,
-        originalSizeBytes: result.originalSizeBytes,
-        finalSizeBytes: result.finalSizeBytes,
-        pageCount: result.pageCount,
-        processedAt: DateTime.now(),
-        durationMs: result.durationMs,
+        result: result,
       );
-
-      await _historyRepository.addRecord(record);
-      return record;
     } finally {
       await _cacheCleanupService.purgeTemporaryFiles(trackedPaths: imagePaths);
     }
   }
 
-  String _sanitizePdfName(String input, {required String fallback}) {
-    final trimmed = input.trim();
-    final base = trimmed.isEmpty ? fallback : trimmed;
-    return base.toLowerCase().endsWith('.pdf') ? base : '$base.pdf';
+  Future<ProcessedFileRecord> addPageNumbers({
+    required String inputPath,
+    required String desiredOutputName,
+    required PageNumberPosition position,
+  }) async {
+    try {
+      final outDir = await _resolveOutputDirectory();
+      final cleanName = _sanitizeExt(desiredOutputName, '.pdf', 'مرقم');
+      final result = await _isolateService.addPageNumbers(
+        inputPath: inputPath,
+        outputPath: '${outDir.path}/$cleanName',
+        position: position,
+      );
+      return _saveToHistory(
+        fileName: cleanName,
+        operationType: PdfOperationType.pageNumbers,
+        result: result,
+      );
+    } finally {
+      await _cacheCleanupService.purgeTemporaryFiles();
+    }
   }
 
-  String _stripPdfExtension(String input) {
+  Future<ProcessedFileRecord> stampTextOrSignatureOnPdf({
+    required String inputPath,
+    required String desiredOutputName,
+    required PdfOperationType operationType,
+    required Uint8List overlayPngBytes,
+    required double opacity,
+    required bool allPages,
+    required bool centerDiagonal,
+  }) async {
+    try {
+      final outDir = await _resolveOutputDirectory();
+      final cleanName = _sanitizeExt(desiredOutputName, '.pdf', 'معدل');
+      final result = await _isolateService.stampOverlayOnPdf(
+        inputPath: inputPath,
+        outputPath: '${outDir.path}/$cleanName',
+        overlayPngBytes: overlayPngBytes,
+        opacity: opacity,
+        allPages: allPages,
+        centerDiagonal: centerDiagonal,
+      );
+      return _saveToHistory(
+        fileName: cleanName,
+        operationType: operationType,
+        result: result,
+      );
+    } finally {
+      await _cacheCleanupService.purgeTemporaryFiles();
+    }
+  }
+
+  Future<ProcessedFileRecord> protectFile({
+    required String inputPath,
+    required String desiredOutputName,
+    required String password,
+  }) async {
+    try {
+      final outDir = await _resolveOutputDirectory();
+      final cleanName = _sanitizeExt(desiredOutputName, '.pdf', 'محمي');
+      final result = await _isolateService.protectPdf(
+        inputPath: inputPath,
+        outputPath: '${outDir.path}/$cleanName',
+        password: password,
+      );
+      return _saveToHistory(
+        fileName: cleanName,
+        operationType: PdfOperationType.protectPdf,
+        result: result,
+      );
+    } finally {
+      await _cacheCleanupService.purgeTemporaryFiles();
+    }
+  }
+
+  Future<ProcessedFileRecord> unlockFile({
+    required String inputPath,
+    required String desiredOutputName,
+    required String password,
+  }) async {
+    try {
+      final outDir = await _resolveOutputDirectory();
+      final cleanName = _sanitizeExt(desiredOutputName, '.pdf', 'مفتوح');
+      final result = await _isolateService.unlockPdf(
+        inputPath: inputPath,
+        outputPath: '${outDir.path}/$cleanName',
+        password: password,
+      );
+      return _saveToHistory(
+        fileName: cleanName,
+        operationType: PdfOperationType.unlockPdf,
+        result: result,
+      );
+    } finally {
+      await _cacheCleanupService.purgeTemporaryFiles();
+    }
+  }
+
+  Future<ProcessedFileRecord> repairFile({
+    required String inputPath,
+    required String desiredOutputName,
+    PdfOperationType operationType = PdfOperationType.repairPdf,
+  }) async {
+    try {
+      final outDir = await _resolveOutputDirectory();
+      final cleanName = _sanitizeExt(desiredOutputName, '.pdf', 'مصلح');
+      final result = await _isolateService.repairPdf(
+        inputPath: inputPath,
+        outputPath: '${outDir.path}/$cleanName',
+      );
+      return _saveToHistory(
+        fileName: cleanName,
+        operationType: operationType,
+        result: result,
+      );
+    } finally {
+      await _cacheCleanupService.purgeTemporaryFiles();
+    }
+  }
+
+  Future<ProcessedFileRecord> exportPdfTextOrOffice({
+    required String inputPath,
+    required String desiredOutputName,
+    required PdfOperationType operationType,
+  }) async {
+    try {
+      final outDir = await _resolveOutputDirectory();
+      final (ext, format) = switch (operationType) {
+        PdfOperationType.pdfToWord => ('.doc', 'doc'),
+        PdfOperationType.pdfToPowerPoint => ('.html', 'ppt'),
+        PdfOperationType.pdfToExcel => ('.csv', 'csv'),
+        _ => ('.txt', 'txt'),
+      };
+      final cleanName = _sanitizeExt(desiredOutputName, ext, 'مستخرج');
+      final result = await _isolateService.extractOrConvertPdfText(
+        inputPath: inputPath,
+        outputPath: '${outDir.path}/$cleanName',
+        targetFormat: format,
+      );
+      return _saveToHistory(
+        fileName: cleanName,
+        operationType: operationType,
+        result: result,
+      );
+    } finally {
+      await _cacheCleanupService.purgeTemporaryFiles();
+    }
+  }
+
+  Future<ProcessedFileRecord> createOrConvertTextToPdf({
+    required String title,
+    required String bodyText,
+    required String desiredOutputName,
+    required PdfOperationType operationType,
+    int originalBytesHint = 0,
+  }) async {
+    try {
+      final outDir = await _resolveOutputDirectory();
+      final cleanName = _sanitizeExt(desiredOutputName, '.pdf', 'جديد');
+      final pageBitmaps = await _renderTextDocumentToPagePngs(
+        title: title,
+        bodyText: bodyText,
+      );
+      final result = await _isolateService.buildPdfFromRenderedPages(
+        pagePngList: pageBitmaps,
+        outputPath: '${outDir.path}/$cleanName',
+        originalBytesHint: originalBytesHint,
+      );
+      return _saveToHistory(
+        fileName: cleanName,
+        operationType: operationType,
+        result: result,
+      );
+    } finally {
+      await _cacheCleanupService.purgeTemporaryFiles();
+    }
+  }
+
+  Future<ProcessedFileRecord> convertPdfToJpgImages({
+    required String inputPath,
+    required String desiredOutputName,
+  }) async {
+    final stopwatch = Stopwatch()..start();
+    try {
+      final outDir = await _resolveOutputDirectory();
+      final baseName = _stripExtension(desiredOutputName, fallback: 'صفحة');
+      final inputBytes = await File(inputPath).readAsBytes();
+      final doc = await pdfx.PdfDocument.openData(inputBytes);
+
+      final generatedPaths = <String>[];
+      var totalFinalBytes = 0;
+
+      try {
+        for (var i = 1; i <= doc.pagesCount; i++) {
+          final page = await doc.getPage(i);
+          try {
+            final pageImage = await page.render(
+              width: page.width * 2,
+              height: page.height * 2,
+              format: pdfx.PdfPageImageFormat.jpeg,
+              quality: 90,
+            );
+            if (pageImage != null) {
+              final outPath =
+                  '${outDir.path}/${baseName}_${i.toString().padLeft(2, '0')}.jpg';
+              await File(outPath).writeAsBytes(pageImage.bytes, flush: true);
+              generatedPaths.add(outPath);
+              totalFinalBytes += pageImage.bytes.length;
+            }
+          } finally {
+            await page.close();
+          }
+        }
+      } finally {
+        await doc.close();
+      }
+
+      stopwatch.stop();
+      final result = IsolatePdfOutput(
+        outputFilePaths:
+            generatedPaths.isEmpty ? [inputPath] : generatedPaths,
+        originalSizeBytes: inputBytes.length,
+        finalSizeBytes: totalFinalBytes,
+        pageCount: generatedPaths.length,
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
+      return _saveToHistory(
+        fileName: '${baseName}_(${generatedPaths.length}_صور).jpg',
+        operationType: PdfOperationType.pdfToJpg,
+        result: result,
+      );
+    } finally {
+      await _cacheCleanupService.purgeTemporaryFiles();
+    }
+  }
+
+  Future<ProcessedFileRecord> processSingleImage({
+    required String inputImagePath,
+    required String desiredOutputName,
+    required PdfOperationType operationType,
+    CompressionLevel level = CompressionLevel.medium,
+  }) async {
+    try {
+      final outDir = await _resolveOutputDirectory();
+      final (ext, mode) = switch (operationType) {
+        PdfOperationType.convertFromJpg => ('.png', 'from_jpg'),
+        PdfOperationType.convertToJpg => ('.jpg', 'to_jpg'),
+        _ => ('.jpg', 'compress'),
+      };
+      final cleanName = _sanitizeExt(desiredOutputName, ext, 'صورة');
+      final result = await _isolateService.processImageFile(
+        inputImagePath: inputImagePath,
+        outputPath: '${outDir.path}/$cleanName',
+        mode: mode,
+        level: level,
+      );
+      return _saveToHistory(
+        fileName: cleanName,
+        operationType: operationType,
+        result: result,
+      );
+    } finally {
+      await _cacheCleanupService.purgeTemporaryFiles();
+    }
+  }
+
+  /// يحول نصاً (عربياً أو إنجليزياً) أو مسار توقيع مرسوم إلى صورة PNG شفافة لطباعتها على الـ PDF.
+  Future<Uint8List> renderOverlayPng({
+    required String text,
+    List<Offset?> signaturePoints = const [],
+    bool diagonal = false,
+  }) async {
+    const width = 700.0;
+    const height = 280.0;
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder, const Rect.fromLTWH(0, 0, width, height));
+
+    if (signaturePoints.isNotEmpty) {
+      final paint = Paint()
+        ..color = const Color(0xFF0F172A)
+        ..strokeWidth = 4.5
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke;
+
+      for (var i = 0; i < signaturePoints.length - 1; i++) {
+        final p1 = signaturePoints[i];
+        final p2 = signaturePoints[i + 1];
+        if (p1 != null && p2 != null) {
+          canvas.drawLine(p1, p2, paint);
+        }
+      }
+    } else {
+      if (diagonal) {
+        canvas.translate(width / 2, height / 2);
+        canvas.rotate(-0.35);
+        canvas.translate(-width / 2, -height / 2);
+      }
+
+      final tp = TextPainter(
+        text: TextSpan(
+          text: text.trim().isEmpty ? 'وثيق PDF' : text,
+          style: TextStyle(
+            color: diagonal
+                ? const Color(0xFF475569)
+                : const Color(0xFF0F172A),
+            fontSize: diagonal ? 54 : 34,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        textDirection: TextDirection.rtl,
+        textAlign: TextAlign.center,
+      )..layout(maxWidth: width - 40);
+
+      tp.paint(
+        canvas,
+        Offset((width - tp.width) / 2, (height - tp.height) / 2),
+      );
+    }
+
+    final picture = recorder.endRecording();
+    final imgObj = await picture.toImage(width.toInt(), height.toInt());
+    final byteData = await imgObj.toByteData(format: ui.ImageByteFormat.png);
+    return byteData!.buffer.asUint8List();
+  }
+
+  Future<List<Uint8List>> _renderTextDocumentToPagePngs({
+    required String title,
+    required String bodyText,
+  }) async {
+    const pageW = 1190.0;
+    const pageH = 1684.0;
+    const margin = 90.0;
+
+    final lines = bodyText.split('\n');
+    final chunks = <String>[];
+    final buf = StringBuffer();
+    var lineCount = 0;
+
+    for (final line in lines) {
+      buf.writeln(line);
+      lineCount++;
+      if (lineCount >= 32) {
+        chunks.add(buf.toString());
+        buf.clear();
+        lineCount = 0;
+      }
+    }
+    if (buf.isNotEmpty || chunks.isEmpty) {
+      chunks.add(buf.toString());
+    }
+
+    final result = <Uint8List>[];
+    for (var i = 0; i < chunks.length; i++) {
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder, const Rect.fromLTWH(0, 0, pageW, pageH));
+
+      canvas.drawRect(
+        const Rect.fromLTWH(0, 0, pageW, pageH),
+        Paint()..color = const Color(0xFFFFFFFF),
+      );
+
+      var yOffset = margin;
+      if (i == 0 && title.trim().isNotEmpty) {
+        final titlePainter = TextPainter(
+          text: TextSpan(
+            text: title,
+            style: const TextStyle(
+              color: Color(0xFF0F172A),
+              fontSize: 38,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          textDirection: TextDirection.rtl,
+        )..layout(maxWidth: pageW - (margin * 2));
+        titlePainter.paint(
+          canvas,
+          Offset(pageW - margin - titlePainter.width, yOffset),
+        );
+        yOffset += titlePainter.height + 36;
+      }
+
+      final bodyPainter = TextPainter(
+        text: TextSpan(
+          text: chunks[i],
+          style: const TextStyle(
+            color: Color(0xFF1E293B),
+            fontSize: 24,
+            height: 1.6,
+          ),
+        ),
+        textDirection: TextDirection.rtl,
+      )..layout(maxWidth: pageW - (margin * 2));
+
+      bodyPainter.paint(
+        canvas,
+        Offset(pageW - margin - bodyPainter.width, yOffset),
+      );
+
+      final picture = recorder.endRecording();
+      final image = await picture.toImage(pageW.toInt(), pageH.toInt());
+      final pngBytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      result.add(pngBytes!.buffer.asUint8List());
+    }
+    return result;
+  }
+
+  String _sanitizeExt(String input, String ext, String fallback) {
+    final base = _stripExtension(input, fallback: fallback);
+    return '$base$ext';
+  }
+
+  String _stripExtension(String input, {required String fallback}) {
     final trimmed = input.trim();
-    if (trimmed.isEmpty) return 'وثيقة_مقسمة';
-    if (trimmed.toLowerCase().endsWith('.pdf')) {
-      return trimmed.substring(0, trimmed.length - 4);
+    if (trimmed.isEmpty) return fallback;
+    final dotIdx = trimmed.lastIndexOf('.');
+    if (dotIdx > 0) {
+      return trimmed.substring(0, dotIdx);
     }
     return trimmed;
   }
