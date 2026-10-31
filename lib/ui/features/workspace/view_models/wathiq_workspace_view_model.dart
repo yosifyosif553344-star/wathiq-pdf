@@ -147,9 +147,7 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
   bool get hasRequiredInput {
     return switch (_activeOperation.inputKind) {
       PdfOperationInputKind.multiplePdfs => _selectedFiles.length >= 2,
-      PdfOperationInputKind.singlePdf ||
-      PdfOperationInputKind.officeDocument =>
-        _selectedFiles.isNotEmpty,
+      PdfOperationInputKind.singlePdf => _selectedFiles.isNotEmpty,
       PdfOperationInputKind.images => _selectedImages.isNotEmpty,
       PdfOperationInputKind.none => _createPdfBody.trim().isNotEmpty ||
           _createPdfTitle.trim().isNotEmpty,
@@ -273,7 +271,7 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
   Future<void> pickPdfFiles({bool allowMultiple = true}) async {
     _workspaceError = null;
     try {
-      final extensions = _activeOperation.allowedOfficeExtensions;
+      const extensions = ['pdf'];
       final List<PlatformFile> pickedFiles;
       if (allowMultiple) {
         pickedFiles = await FilePicker.pickFiles(
@@ -336,18 +334,10 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
     _workspaceError = null;
     try {
       final picker = ImagePicker();
-      if (_activeOperation == PdfOperationType.imagesToPdf) {
-        final pickedList = await picker.pickMultiImage();
-        if (pickedList.isEmpty) return;
-        for (final imgFile in pickedList) {
-          _selectedImages.add(imgFile.path);
-        }
-      } else {
-        final single = await picker.pickImage(source: ImageSource.gallery);
-        if (single == null) return;
-        _selectedImages
-          ..clear()
-          ..add(single.path);
+      final pickedList = await picker.pickMultiImage();
+      if (pickedList.isEmpty) return;
+      for (final imgFile in pickedList) {
+        _selectedImages.add(imgFile.path);
       }
       notifyListeners();
     } catch (_) {
@@ -615,35 +605,15 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
           );
 
         case PdfOperationType.repairPdf:
-        case PdfOperationType.ocrPdf:
           record = await _operationsRepository.repairFile(
             inputPath: _selectedFiles.first.path,
             desiredOutputName: _outputFileName,
-            operationType: _activeOperation,
           );
 
         case PdfOperationType.extractText:
-        case PdfOperationType.pdfToWord:
-        case PdfOperationType.pdfToPowerPoint:
-        case PdfOperationType.pdfToExcel:
-          record = await _operationsRepository.exportPdfTextOrOffice(
+          record = await _operationsRepository.extractText(
             inputPath: _selectedFiles.first.path,
             desiredOutputName: _outputFileName,
-            operationType: _activeOperation,
-          );
-
-        case PdfOperationType.wordToPdf:
-        case PdfOperationType.powerPointToPdf:
-        case PdfOperationType.excelToPdf:
-          final primary = _selectedFiles.first;
-          final extractedText = await _operationsRepository.isolateService
-              .extractReadableTextFromOfficeFile(primary.path);
-          record = await _operationsRepository.createOrConvertTextToPdf(
-            title: primary.name,
-            bodyText: extractedText,
-            desiredOutputName: _outputFileName,
-            operationType: _activeOperation,
-            originalBytesHint: primary.sizeBytes,
           );
 
         case PdfOperationType.createPdf:
@@ -654,21 +624,6 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
             operationType: PdfOperationType.createPdf,
           );
 
-        case PdfOperationType.pdfToJpg:
-          record = await _operationsRepository.convertPdfToJpgImages(
-            inputPath: _selectedFiles.first.path,
-            desiredOutputName: _outputFileName,
-          );
-
-        case PdfOperationType.compressImage:
-        case PdfOperationType.convertToJpg:
-        case PdfOperationType.convertFromJpg:
-          record = await _operationsRepository.processSingleImage(
-            inputImagePath: _selectedImages.first,
-            desiredOutputName: _outputFileName,
-            operationType: _activeOperation,
-            level: _compressionLevel,
-          );
       }
 
       _lastCompletedRecord = record;

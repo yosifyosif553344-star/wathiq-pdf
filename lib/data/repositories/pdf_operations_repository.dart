@@ -3,9 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
-import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 import '../../domain/models/compression_preset.dart';
 import '../../domain/models/page_instruction.dart';
@@ -305,7 +303,6 @@ class PdfOperationsRepository {
   Future<ProcessedFileRecord> repairFile({
     required String inputPath,
     required String desiredOutputName,
-    PdfOperationType operationType = PdfOperationType.repairPdf,
   }) async {
     try {
       final outDir = await _resolveOutputDirectory();
@@ -316,7 +313,7 @@ class PdfOperationsRepository {
       );
       return _saveToHistory(
         fileName: cleanName,
-        operationType: operationType,
+        operationType: PdfOperationType.repairPdf,
         result: result,
       );
     } finally {
@@ -324,28 +321,20 @@ class PdfOperationsRepository {
     }
   }
 
-  Future<ProcessedFileRecord> exportPdfTextOrOffice({
+  Future<ProcessedFileRecord> extractText({
     required String inputPath,
     required String desiredOutputName,
-    required PdfOperationType operationType,
   }) async {
     try {
       final outDir = await _resolveOutputDirectory();
-      final (ext, format) = switch (operationType) {
-        PdfOperationType.pdfToWord => ('.doc', 'doc'),
-        PdfOperationType.pdfToPowerPoint => ('.html', 'ppt'),
-        PdfOperationType.pdfToExcel => ('.csv', 'csv'),
-        _ => ('.txt', 'txt'),
-      };
-      final cleanName = _sanitizeExt(desiredOutputName, ext, 'مستخرج');
-      final result = await _isolateService.extractOrConvertPdfText(
+      final cleanName = _sanitizeExt(desiredOutputName, '.txt', 'نص');
+      final result = await _isolateService.extractPdfText(
         inputPath: inputPath,
         outputPath: '${outDir.path}/$cleanName',
-        targetFormat: format,
       );
       return _saveToHistory(
         fileName: cleanName,
-        operationType: operationType,
+        operationType: PdfOperationType.extractText,
         result: result,
       );
     } finally {
@@ -371,93 +360,6 @@ class PdfOperationsRepository {
         pagePngList: pageBitmaps,
         outputPath: '${outDir.path}/$cleanName',
         originalBytesHint: originalBytesHint,
-      );
-      return _saveToHistory(
-        fileName: cleanName,
-        operationType: operationType,
-        result: result,
-      );
-    } finally {
-      await _cacheCleanupService.purgeTemporaryFiles();
-    }
-  }
-
-  Future<ProcessedFileRecord> convertPdfToJpgImages({
-    required String inputPath,
-    required String desiredOutputName,
-  }) async {
-    final stopwatch = Stopwatch()..start();
-    try {
-      final outDir = await _resolveOutputDirectory();
-      final baseName = _stripExtension(desiredOutputName, fallback: 'صفحة');
-      final inputBytes = await File(inputPath).readAsBytes();
-      final doc = PdfDocument(inputBytes: inputBytes);
-      final extractor = PdfTextExtractor(doc);
-
-      final generatedPaths = <String>[];
-      var totalFinalBytes = 0;
-
-      try {
-        for (var i = 0; i < doc.pages.count; i++) {
-          final pageText = extractor
-              .extractText(startPageIndex: i, endPageIndex: i)
-              .trim();
-          final pngList = await _renderTextDocumentToPagePngs(
-            title: 'صفحة ${i + 1}',
-            bodyText: pageText.isEmpty ? 'صفحة رقم ${i + 1}' : pageText,
-          );
-          final decoded = img.decodePng(pngList.first);
-          final jpgBytes = decoded != null
-              ? Uint8List.fromList(img.encodeJpg(decoded, quality: 90))
-              : pngList.first;
-          final outPath =
-              '${outDir.path}/${baseName}_${(i + 1).toString().padLeft(2, '0')}.jpg';
-          await File(outPath).writeAsBytes(jpgBytes, flush: true);
-          generatedPaths.add(outPath);
-          totalFinalBytes += jpgBytes.length;
-        }
-      } finally {
-        doc.dispose();
-      }
-
-      stopwatch.stop();
-      final result = IsolatePdfOutput(
-        outputFilePaths:
-            generatedPaths.isEmpty ? [inputPath] : generatedPaths,
-        originalSizeBytes: inputBytes.length,
-        finalSizeBytes: totalFinalBytes,
-        pageCount: generatedPaths.length,
-        durationMs: stopwatch.elapsedMilliseconds,
-      );
-      return _saveToHistory(
-        fileName: '${baseName}_(${generatedPaths.length}_صور).jpg',
-        operationType: PdfOperationType.pdfToJpg,
-        result: result,
-      );
-    } finally {
-      await _cacheCleanupService.purgeTemporaryFiles();
-    }
-  }
-
-  Future<ProcessedFileRecord> processSingleImage({
-    required String inputImagePath,
-    required String desiredOutputName,
-    required PdfOperationType operationType,
-    CompressionLevel level = CompressionLevel.medium,
-  }) async {
-    try {
-      final outDir = await _resolveOutputDirectory();
-      final (ext, mode) = switch (operationType) {
-        PdfOperationType.convertFromJpg => ('.png', 'from_jpg'),
-        PdfOperationType.convertToJpg => ('.jpg', 'to_jpg'),
-        _ => ('.jpg', 'compress'),
-      };
-      final cleanName = _sanitizeExt(desiredOutputName, ext, 'صورة');
-      final result = await _isolateService.processImageFile(
-        inputImagePath: inputImagePath,
-        outputPath: '${outDir.path}/$cleanName',
-        mode: mode,
-        level: level,
       );
       return _saveToHistory(
         fileName: cleanName,

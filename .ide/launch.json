@@ -1,0 +1,25 @@
+{
+    "version": "1.0",
+    "configurations": [
+        {
+            "name": "Custom Run",
+            "type": "terminal",
+            "command": "python3 \"${file}\"",
+            "file": null,
+            "cwd": "${workspaceFolder}",
+            "env": null,
+            "args": null,
+            "isDefault": false
+        },
+        {
+            "name": "Dev Server",
+            "type": "terminal",
+            "command": "ز",
+            "file": null,
+            "cwd": "${workspaceFolder}",
+            "env": null,
+            "args": null,
+            "isDefault": false
+        }
+    ]
+}

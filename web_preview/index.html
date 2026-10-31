@@ -1,94 +1,896 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl" data-theme="dark">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>وثيق PDF</title>
-<style>
-:root{--bg:#0D0F12;--card:#161920;--line:#64748B;--tx:#F1F5F9;--tx2:#94A3B8;--ac:#34D399;--on:#062E22;--err:#F87171}
-[data-theme=light]{--bg:#F8FAFC;--card:#FFFFFF;--tx:#0F172A;--tx2:#475569;--ac:#047857;--on:#FFFFFF;--err:#B91C1C}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--tx);font-family:Tahoma,'Segoe UI',sans-serif;min-height:100dvh}
-.app{max-width:640px;margin:auto;min-height:100dvh;display:flex;flex-direction:column}
-header{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
-header h1{font-size:19px;flex:1}
-button{font:inherit;cursor:pointer;border-radius:8px;min-height:44px;padding:0 16px;border:1px solid var(--line);background:transparent;color:var(--tx)}
-button.p{background:var(--ac);color:var(--on);border-color:var(--ac);font-weight:700}
-button:disabled{opacity:.4;cursor:default}
-.icon{border:none;min-width:44px;padding:0;font-size:20px;color:var(--ac)}
-main{flex:1;padding:16px;display:flex;flex-direction:column;gap:10px}
-.tile{display:flex;align-items:center;gap:14px;padding:16px;background:var(--card);border:1px solid var(--line);border-radius:10px;cursor:pointer}
-.tile b{flex:1}.tile span{color:var(--ac);font-size:22px}.tile i{color:var(--tx2);font-style:normal}
-h2{font-size:16px;margin-top:14px}
-.muted{color:var(--tx2);font-size:14px}
-.row{display:flex;gap:8px;flex-wrap:wrap}
-.file{display:flex;align-items:center;gap:10px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:10px}
-.file div{flex:1}
-select,input,textarea{font:inherit;width:100%;min-height:44px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--tx)}
-footer{padding:16px}footer button{width:100%}
-.modal{position:fixed;inset:0;background:#0009;display:flex;align-items:center;justify-content:center;padding:20px}
-.box{background:var(--card);border-radius:12px;padding:22px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:8px;text-align:center}
-.box .ok{font-size:44px;color:var(--ac)}
-.hidden{display:none}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>وثيق PDF — أدوات PDF محلية</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root[data-theme="dark"] {
+      --bg: #0D1117;
+      --surface: #161B22;
+      --surface-hover: #1C2128;
+      --border: #21262D;
+      --text-primary: #F0F6FC;
+      --text-secondary: #8B949E;
+      --accent: #10B981;
+      --accent-soft: rgba(16, 185, 129, 0.14);
+      --danger: #F85149;
+      --shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+    }
+
+    :root[data-theme="light"] {
+      --bg: #F6F8FA;
+      --surface: #FFFFFF;
+      --surface-hover: #F0F3F6;
+      --border: #E1E4E8;
+      --text-primary: #1F2328;
+      --text-secondary: #656D76;
+      --accent: #0D9488;
+      --accent-soft: rgba(13, 148, 136, 0.12);
+      --danger: #CF222E;
+      --shadow: 0 18px 42px rgba(31, 35, 40, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+      background: radial-gradient(circle at top, #16222f 0%, #090d12 100%);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+    }
+
+    @media (max-width: 500px) {
+      body {
+        padding: 0;
+        background: var(--bg);
+      }
+    }
+
+    .phone-frame {
+      width: 100%;
+      max-width: 430px;
+      height: 860px;
+      max-height: 95vh;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 34px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    @media (max-width: 500px) {
+      .phone-frame {
+        max-width: 100%;
+        height: 100vh;
+        max-height: 100vh;
+        border-radius: 0;
+        border: none;
+      }
+    }
+
+    /* AppBar */
+    .app-bar {
+      padding: 16px 18px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      display: grid;
+      place-items: center;
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+    }
+
+    .brand-badge {
+      font-size: 11px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-weight: 600;
+    }
+
+    .icon-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 11px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-primary);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+
+    .icon-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Main Scroll Area */
+    .screen-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      scrollbar-width: none;
+    }
+    .screen-body::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* Quick Access Row */
+    .quick-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+
+    .quick-card {
+      padding: 13px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(16, 185, 129, 0.28);
+      background: linear-gradient(145deg, var(--accent-soft), var(--surface));
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+    }
+
+    .quick-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+    }
+
+    .quick-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: rgba(16, 185, 129, 0.18);
+      color: var(--accent);
+      display: grid;
+      place-items: center;
+    }
+
+    .quick-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .quick-sub {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    /* Category Section */
+    .cat-section {
+      margin-bottom: 20px;
+    }
+
+    .cat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      padding: 0 2px;
+    }
+
+    .cat-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+
+    .cat-count {
+      font-size: 11px;
+      color: var(--text-secondary);
+      opacity: 0.75;
+    }
+
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .tool-tile {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 8px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+
+    .tool-tile:hover {
+      border-color: var(--accent);
+      background: var(--surface-hover);
+      transform: translateY(-2px);
+    }
+
+    .tool-icon-box {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      display: grid;
+      place-items: center;
+    }
+
+    .tool-name {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.3;
+    }
+
+    /* Recent Files */
+    .recent-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 11px 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .recent-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .recent-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    .recent-name {
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .recent-meta {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    /* Tool Workspace Overlay */
+    .workspace-view {
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      z-index: 25;
+      display: none;
+      flex-direction: column;
+    }
+
+    .workspace-view.active {
+      display: flex;
+    }
+
+    .ws-header-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .ws-header-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    .ws-header-title {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .ws-header-sub {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .pick-zone {
+      background: var(--surface);
+      border: 1.5px dashed rgba(16, 185, 129, 0.45);
+      border-radius: 16px;
+      padding: 26px 18px;
+      text-align: center;
+      cursor: pointer;
+      margin-bottom: 16px;
+      transition: 0.15s ease;
+    }
+
+    .pick-zone:hover {
+      background: var(--surface-hover);
+      border-color: var(--accent);
+    }
+
+    .pick-circle {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      color: var(--accent);
+      display: grid;
+      place-items: center;
+      margin: 0 auto 10px;
+    }
+
+    .file-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .change-btn {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-soft);
+      border: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .field-label {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .input-field {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 13.5px;
+      margin-bottom: 14px;
+      outline: none;
+    }
+
+    .input-field:focus {
+      border-color: var(--accent);
+    }
+
+    .choice-card {
+      background: var(--surface);
+      border: 1.2px solid var(--border);
+      border-radius: 13px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+
+    .choice-card.selected {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .seg-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .seg-btn {
+      padding: 10px 8px;
+      border-radius: 11px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .seg-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .page-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .page-tile {
+      background: var(--surface);
+      border: 1.4px solid var(--accent);
+      border-radius: 13px;
+      padding: 14px 8px 10px;
+      text-align: center;
+      position: relative;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .page-tile.excluded {
+      opacity: 0.4;
+      border-color: var(--border);
+    }
+
+    .rot-btn {
+      margin-top: 6px;
+      font-size: 11px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: none;
+      padding: 3px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .action-bar {
+      padding: 12px 16px 18px;
+      border-top: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .primary-btn {
+      width: 100%;
+      height: 50px;
+      border-radius: 13px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: opacity 0.15s ease;
+    }
+
+    .primary-btn:hover {
+      opacity: 0.92;
+    }
+
+    /* Toast */
+    .toast {
+      position: absolute;
+      bottom: 84px;
+      left: 16px;
+      right: 16px;
+      background: #10B981;
+      color: #06281E;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 40;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+    }
+    .toast.show {
+      display: flex;
+    }
+  </style>
 </head>
 <body>
-<div class="app" id="app"></div>
-<script>
-const tools=[
- {id:'compress',t:'ضغط PDF',i:'⇲'},
- {id:'split',t:'تقسيم PDF',i:'✂'},
- {id:'merge',t:'دمج ملفات PDF',i:'⧉'},
- {id:'pdf_to_word',t:'PDF إلى وورد',i:'W'},
- {id:'pdf_to_ppt',t:'PDF إلى بوربوينت',i:'P'},
- {id:'pdf_to_excel',t:'PDF إلى إكسيل',i:'X'},
- {id:'word_to_pdf',t:'وورد إلى PDF',i:'📄'},
- {id:'ppt_to_pdf',t:'بوربوينت إلى PDF',i:'📊'},
- {id:'excel_to_pdf',t:'إكسل إلى PDF',i:'⊞'},
- {id:'edit_pdf',t:'تعديل ملف PDF',i:'✎'},
- {id:'pdf_to_jpg',t:'PDF إلى JPG',i:'🖼'},
- {id:'images_to_pdf',t:'صورة إلى PDF',i:'📷'},
- {id:'page_numbers',t:'ترقيم الصفحات',i:'#'},
- {id:'watermark',t:'العلامة المائية',i:' stamp '},
- {id:'rotate_pdf',t:'تدوير ملفات PDF',i:'⟳'},
- {id:'unlock_pdf',t:'فتح قفل ملفات PDF',i:'🔓'},
- {id:'protect_pdf',t:'حماية ملف PDF',i:'🔒'},
- {id:'organize',t:'تنظيم ملف PDF',i:'▦'},
- {id:'repair_pdf',t:'إصلاح مستند PDF',i:'🛠'},
- {id:'sign_pdf',t:'توقيع مستند PDF',i:'✒'},
- {id:'extract_text',t:'استخراج النصوص',i:'TXT'},
- {id:'ocr_pdf',t:'OCR PDF',i:'🔍'},
- {id:'create_pdf',t:'إنشاء ملف PDF',i:'＋'},
- {id:'compress_image',t:'ضغط الصورة',i:'🖼'},
- {id:'convert_to_jpg',t:'التحويل إلى JPG',i:'JPG'},
- {id:'convert_from_jpg',t:'التحويل من JPG',i:'PNG'}
-];
-let s={view:'home',tool:null,files:[],done:false,busy:false,
- history:[{n:'محاضرات.pdf',op:'دمج PDF',sz:'3.2 MB'},{n:'عقد.pdf',op:'ضغط PDF',sz:'1.1 MB'}]};
-const app=document.getElementById('app');
-function toggleTheme(){const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'}
-function openTool(id){s.tool=tools.find(t=>t.id===id);s.view='tool';s.files=id==='create_pdf'?[{n:'جديد',p:1}]:[];s.done=false;render()}
-function addFile(){const n=s.files.length+1;s.files.push({n:`ملف_${n}.pdf`,p:8});render()}
-function render(){
- if(s.view==='home'){app.innerHTML=`
- <header><span style="color:var(--ac);font-size:26px">🛡</span><h1>وثيق PDF</h1><button class="icon" onclick="toggleTheme()">◐</button></header>
- <main>${tools.map(t=>`<div class="tile" onclick="openTool('${t.id}')"><span>${t.i}</span><b>${t.t}</b><i>‹</i></div>`).join('')}
- <h2>آخر الملفات</h2>
- ${s.history.map(h=>`<div class="file"><div><b>${h.n}</b><div class="muted">${h.op} • ${h.sz}</div></div><span class="muted">⋮</span></div>`).join('')}
- </main>`;return}
- const t=s.tool,has=s.files.length>0;
- let body=`<button onclick="addFile()">${has?'تغيير الملف':'اختيار ملف'}</button>`;
- if(has&&t.id!=='create_pdf')body+=`<div class="file"><div><b>${s.files[0].n}</b><div class="muted">${s.files[0].p} صفحة</div></div></div>`;
- if(t.id==='create_pdf')body=`<input placeholder="عنوان المستند" value="مستند جديد"><textarea rows="6" placeholder="محتوى المستند..."></textarea>`;
- else if(t.id==='protect_pdf'||t.id==='unlock_pdf')body+=has?`<input type="password" placeholder="كلمة المرور">`:'';
- else if(t.id==='watermark'||t.id==='edit_pdf')body+=has?`<input placeholder="النص المطلوب" value="سري للغاية">`:'';
- app.innerHTML=`<header><button class="icon" onclick="s.view='home';render()">›</button><h1>${t.t}</h1></header>
- <main>${body}</main>
- <footer><button class="p" ${has&&!s.busy?'':'disabled'} onclick="run()">${s.busy?'جارٍ العمل...':'تنفيذ وحفظ'}</button></footer>
- <div class="modal ${s.done?'':'hidden'}"><div class="box"><div class="ok">✓</div><h2>تم بنجاح</h2><div>${t.t}.pdf</div><div class="muted">1.8 MB</div>
- <button class="p" style="margin-top:10px">مشاركة</button><button onclick="s.done=false;s.view='home';render()">فتح</button></div></div>`}
-function run(){s.busy=true;render();setTimeout(()=>{s.busy=false;s.done=true;render()},700)}
-render();
-</script>
+  <div class="phone-frame">
+    <!-- Home AppBar -->
+    <div class="app-bar">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <span class="brand-title">وثيق PDF</span>
+        <span class="brand-badge">بدون إنترنت</span>
+      </div>
+      <button class="icon-btn" onclick="toggleTheme()" title="تبديل المظهر">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"/>
+          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Home Body -->
+    <div class="screen-body" id="homeBody">
+      <!-- Quick Access 3 Cards -->
+      <div class="quick-row">
+        <div class="quick-card" onclick="openTool('merge')">
+          <div class="quick-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+          </div>
+          <div class="quick-title">دمج</div>
+          <div class="quick-sub">جمع ملفات</div>
+        </div>
+        <div class="quick-card" onclick="openTool('compress')">
+          <div class="quick-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></svg>
+          </div>
+          <div class="quick-title">ضغط</div>
+          <div class="quick-sub">تقليل الحجم</div>
+        </div>
+        <div class="quick-card" onclick="openTool('imagesToPdf')">
+          <div class="quick-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+          </div>
+          <div class="quick-title">صور إلى PDF</div>
+          <div class="quick-sub">تحويل الصور</div>
+        </div>
+      </div>
+
+      <!-- Categorized PDF Tools -->
+      <div id="categoriesContainer"></div>
+
+      <!-- Recent Files -->
+      <div class="cat-section">
+        <div class="cat-header">
+          <span class="cat-title">الأخيرة</span>
+          <span class="cat-count" id="recentCount">2</span>
+        </div>
+        <div id="recentList"></div>
+      </div>
+    </div>
+
+    <!-- Tool Workspace View -->
+    <div class="workspace-view" id="workspaceView">
+      <div class="app-bar">
+        <div class="brand">
+          <button class="icon-btn" onclick="closeTool()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+          <span class="brand-title" id="wsTitle">أداة PDF</span>
+        </div>
+      </div>
+      <div class="screen-body" id="wsBody"></div>
+      <div class="action-bar">
+        <button class="primary-btn" id="wsActionBtn" onclick="runOperation()">
+          <span>تنفيذ العملية</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="toast" id="toastBox">
+      <span id="toastText">تم حفظ ملف PDF بنجاح</span>
+      <span>✓</span>
+    </div>
+  </div>
+
+  <script>
+    const TOOLS = [
+      // تنظيم الصفحات (5)
+      { id: 'merge', title: 'دمج', subtitle: 'جمع عدة ملفات PDF في ملف واحد مرتب', action: 'دمج الملفات', cat: 'تنظيم الصفحات', icon: 'merge' },
+      { id: 'split', title: 'تقسيم', subtitle: 'استخراج صفحات محددة من ملف PDF', action: 'استخراج الصفحات', cat: 'تنظيم الصفحات', icon: 'split' },
+      { id: 'compress', title: 'ضغط', subtitle: 'تقليل حجم ملف PDF مع الحفاظ على الوضوح', action: 'ضغط الملف', cat: 'تنظيم الصفحات', icon: 'compress' },
+      { id: 'organize', title: 'ترتيب الصفحات', subtitle: 'تدوير أو حذف أو إعادة ترتيب الصفحات', action: 'حفظ التعديلات', cat: 'تنظيم الصفحات', icon: 'grid' },
+      { id: 'rotatePdf', title: 'تدوير', subtitle: 'تدوير جميع صفحات الملف بزاوية محددة', action: 'تدوير وحفظ', cat: 'تنظيم الصفحات', icon: 'rotate' },
+
+      // تحرير وتوقيع (4)
+      { id: 'signPdf', title: 'توقيع', subtitle: 'ارسم توقيعك بيدك وأدرجه على الوثيقة', action: 'إدراج التوقيع', cat: 'تحرير وتوقيع', icon: 'pen' },
+      { id: 'editPdf', title: 'إضافة نص', subtitle: 'كتابة نص أو ملاحظة مباشرة داخل الملف', action: 'حفظ التعديلات', cat: 'تحرير وتوقيع', icon: 'text' },
+      { id: 'watermark', title: 'علامة مائية', subtitle: 'ختم نصي شفاف على جميع الصفحات', action: 'تطبيق العلامة', cat: 'تحرير وتوقيع', icon: 'stamp' },
+      { id: 'pageNumbers', title: 'ترقيم الصفحات', subtitle: 'إضافة أرقام الصفحات أسفل كل صفحة', action: 'ترقيم وحفظ', cat: 'تحرير وتوقيع', icon: 'numbers' },
+
+      // إنشاء واستخراج (3)
+      { id: 'imagesToPdf', title: 'صور إلى PDF', subtitle: 'تحويل الصور والوثائق المصورة إلى PDF', action: 'إنشاء PDF', cat: 'إنشاء واستخراج', icon: 'image' },
+      { id: 'createPdf', title: 'ملف جديد', subtitle: 'كتابة مستند نصي وتصديره كملف PDF', action: 'إنشاء الملف', cat: 'إنشاء واستخراج', icon: 'newfile' },
+      { id: 'extractText', title: 'استخراج النص', subtitle: 'نسخ وحفظ جميع النصوص من داخل PDF', action: 'استخراج النص', cat: 'إنشاء واستخراج', icon: 'txt' },
+
+      // الحماية والأمان (3)
+      { id: 'protectPdf', title: 'قفل بكلمة مرور', subtitle: 'تشفير ملف PDF بكلمة مرور قوية', action: 'تشفير وحفظ', cat: 'الحماية والأمان', icon: 'lock' },
+      { id: 'unlockPdf', title: 'فك القفل', subtitle: 'إزالة كلمة المرور من ملف PDF محمي', action: 'فك القفل', cat: 'الحماية والأمان', icon: 'unlock' },
+      { id: 'repairPdf', title: 'إصلاح', subtitle: 'إعادة بناء هيكل ملف PDF التالف', action: 'إصلاح وحفظ', cat: 'الحماية والأمان', icon: 'wrench' }
+    ];
+
+    const ICONS = {
+      merge: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>',
+      split: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M8 3H3v5M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3m18 0-7.828 7.828A4 4 0 0 0 12 13.7"/></svg>',
+      compress: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></svg>',
+      grid: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>',
+      rotate: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>',
+      pen: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>',
+      text: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>',
+      stamp: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 22h14"/><path d="M19.27 13.73A2.5 2.5 0 0 0 17.5 13h-11A2.5 2.5 0 0 0 4 15.5V17a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-1.5c0-.66-.26-1.3-.73-1.77Z"/><path d="M14 13V8.5C14 7 15 7 15 5a3 3 0 0 0-6 0c0 2 1 2 1 3.5V13"/></svg>',
+      numbers: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>',
+      image: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>',
+      newfile: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>',
+      txt: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
+      lock: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+      unlock: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>',
+      wrench: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>'
+    };
+
+    let recentFiles = [
+      { name: 'عقد_العمل_الموثق.pdf', size: '1.2 MB ← 340 KB (-71%)', tool: 'ضغط' },
+      { name: 'مذكرة_التخرج_الكاملة.pdf', size: '4.8 MB (32 صفحة)', tool: 'دمج' }
+    ];
+
+    let activeTool = null;
+    let compressPreset = 'medium';
+    let rotateAngle = 90;
+
+    function renderHome() {
+      const cats = ['تنظيم الصفحات', 'تحرير وتوقيع', 'إنشاء واستخراج', 'الحماية والأمان'];
+      const container = document.getElementById('categoriesContainer');
+      container.innerHTML = cats.map(cat => {
+        const list = TOOLS.filter(t => t.cat === cat);
+        return `
+          <div class="cat-section">
+            <div class="cat-header">
+              <span class="cat-title">${cat}</span>
+              <span class="cat-count">${list.length}</span>
+            </div>
+            <div class="tool-grid">
+              ${list.map(t => `
+                <div class="tool-tile" onclick="openTool('${t.id}')">
+                  <div class="tool-icon-box">${ICONS[t.icon]}</div>
+                  <div class="tool-name">${t.title}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      renderRecent();
+    }
+
+    function renderRecent() {
+      document.getElementById('recentCount').textContent = recentFiles.length;
+      document.getElementById('recentList').innerHTML = recentFiles.map(f => `
+        <div class="recent-card">
+          <div class="recent-info">
+            <div class="recent-icon">${ICONS.newfile}</div>
+            <div>
+              <div class="recent-name">${f.name}</div>
+              <div class="recent-meta">${f.tool} • ${f.size}</div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openTool(id) {
+      activeTool = TOOLS.find(t => t.id === id);
+      if (!activeTool) return;
+
+      document.getElementById('wsTitle').textContent = activeTool.title;
+      document.getElementById('wsActionBtn').innerHTML = `<span>${activeTool.action}</span>`;
+
+      let optionsHtml = '';
+      if (id === 'compress') {
+        optionsHtml = `
+          <span class="field-label">مستوى الضغط</span>
+          <div class="choice-card" onclick="selectPreset(this)">
+            <div>
+              <div style="font-weight:700;font-size:13.5px">ضغط خفيف</div>
+              <div style="font-size:11.5px;color:var(--text-secondary)">دقة 300 DPI — يحافظ على وضوح الطباعة الكامل</div>
+            </div>
+          </div>
+          <div class="choice-card selected" onclick="selectPreset(this)">
+            <div>
+              <div style="font-weight:700;font-size:13.5px">ضغط متوسط (موصى به)</div>
+              <div style="font-size:11.5px;color:var(--text-secondary)">دقة 150 DPI — توازن مثالي بين الوضوح والحجم</div>
+            </div>
+          </div>
+          <div class="choice-card" onclick="selectPreset(this)">
+            <div>
+              <div style="font-weight:700;font-size:13.5px">ضغط أقصى</div>
+              <div style="font-size:11.5px;color:var(--text-secondary)">دقة 96 DPI — أصغر حجم ممكن للمراسلة السريعة</div>
+            </div>
+          </div>
+        `;
+      } else if (id === 'split') {
+        optionsHtml = `
+          <span class="field-label">نطاق الصفحات المطلوب استخراجها</span>
+          <input class="input-field" value="1-3, 5" placeholder="مثال: 1-3, 5" />
+        `;
+      } else if (id === 'rotatePdf') {
+        optionsHtml = `
+          <span class="field-label">زاوية التدوير</span>
+          <div class="seg-row">
+            <button class="seg-btn active" onclick="selectSeg(this)">90° يمين</button>
+            <button class="seg-btn" onclick="selectSeg(this)">180° قلب</button>
+            <button class="seg-btn" onclick="selectSeg(this)">270° يسار</button>
+          </div>
+        `;
+      } else if (id === 'organize') {
+        optionsHtml = `
+          <span class="field-label">اضغط على الصفحة لتضمينها أو استبعادها، أو دوّرها</span>
+          <div class="page-grid">
+            ${[1,2,3,4,5,6].map(p => `
+              <div class="page-tile" onclick="this.classList.toggle('excluded')">
+                <div style="font-weight:700;font-size:15px">صفحة ${p}</div>
+                <button class="rot-btn" onclick="event.stopPropagation();showToast('تم تدوير صفحة ${p} بزاوية 90°')">تدوير 90° ↻</button>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      } else if (id === 'protectPdf' || id === 'unlockPdf') {
+        optionsHtml = `
+          <span class="field-label">كلمة المرور</span>
+          <input type="password" class="input-field" value="123456" placeholder="أدخل كلمة المرور" />
+        `;
+      } else if (id === 'watermark') {
+        optionsHtml = `
+          <span class="field-label">نص العلامة المائية</span>
+          <input class="input-field" value="سري — وثيق PDF" />
+        `;
+      } else if (id === 'editPdf' || id === 'createPdf') {
+        optionsHtml = `
+          <span class="field-label">النص المراد كتابته في الوثيقة</span>
+          <textarea class="input-field" rows="4">بسم الله الرحمن الرحيم — مستند رسمي صادر عبر تطبيق وثيق PDF.</textarea>
+        `;
+      } else if (id === 'signPdf') {
+        optionsHtml = `
+          <span class="field-label">منطقة التوقيع اليدوي الحي</span>
+          <div style="height:150px;background:var(--surface);border:1px solid var(--border);border-radius:14px;display:grid;place-items:center;color:var(--accent);font-weight:600;">
+            ✍️ توقيع يدوي جاهز للإدراج أسفل الصفحة
+          </div>
+        `;
+      }
+
+      document.getElementById('wsBody').innerHTML = `
+        <div class="ws-header-card">
+          <div class="ws-header-icon">${ICONS[activeTool.icon]}</div>
+          <div>
+            <div class="ws-header-title">${activeTool.title}</div>
+            <div class="ws-header-sub">${activeTool.subtitle}</div>
+          </div>
+        </div>
+        ${id !== 'createPdf' ? `
+        <div class="file-card">
+          <div class="recent-info">
+            <div class="recent-icon">${ICONS.newfile}</div>
+            <div>
+              <div class="recent-name">الوثيقة_المحددة.pdf</div>
+              <div class="recent-meta">2.4 MB • 12 صفحة</div>
+            </div>
+          </div>
+          <button class="change-btn" onclick="showToast('تم اختيار الملف بنجاح')">تغيير</button>
+        </div>` : ''}
+        ${optionsHtml}
+      `;
+
+      document.getElementById('workspaceView').classList.add('active');
+    }
+
+    function closeTool() {
+      document.getElementById('workspaceView').classList.remove('active');
+    }
+
+    function selectPreset(el) {
+      el.parentElement.querySelectorAll('.choice-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+
+    function selectSeg(el) {
+      el.parentElement.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function runOperation() {
+      if (!activeTool) return;
+      recentFiles.unshift({
+        name: `وثيق_${activeTool.title}_${recentFiles.length + 1}.pdf`,
+        size: '890 KB • جاهز للمشاركة',
+        tool: activeTool.title
+      });
+      renderRecent();
+      closeTool();
+      showToast(`تم تنفيذ "${activeTool.title}" وحفظ الملف محلياً`);
+    }
+
+    function showToast(msg) {
+      const box = document.getElementById('toastBox');
+      document.getElementById('toastText').textContent = msg;
+      box.classList.add('show');
+      setTimeout(() => box.classList.remove('show'), 2600);
+    }
+
+    function toggleTheme() {
+      const root = document.documentElement;
+      root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    }
+
+    renderHome();
+  </script>
 </body>
 </html>

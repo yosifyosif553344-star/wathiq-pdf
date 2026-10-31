@@ -1,7 +1,7 @@
 /// خيارات أبعاد الورق عند تحويل الصور أو الماسح الضوئي إلى ملف PDF.
 enum PdfPaperSize {
-  a4(title: 'A4 قياسي (210 × 297 مم)'),
-  originalImage(title: 'حجم الصورة الأصلي');
+  a4(title: 'A4 قياسي'),
+  originalImage(title: 'حجم الصورة');
 
   const PdfPaperSize({required this.title});
   final String title;
@@ -9,9 +9,9 @@ enum PdfPaperSize {
 
 /// خيارات هوامش الصفحة حول الصورة الممسوحة ضوئياً.
 enum PdfPageMargin {
-  none(title: 'بدون هوامش (0 مم)', points: 0),
-  standard(title: 'هامش قياسي (12 مم)', points: 34),
-  wide(title: 'هامش واسع (20 مم)', points: 56);
+  none(title: 'بدون هامش', points: 0),
+  standard(title: 'قياسي', points: 34),
+  wide(title: 'واسع', points: 56);
 
   const PdfPageMargin({required this.title, required this.points});
   final String title;
@@ -20,9 +20,9 @@ enum PdfPageMargin {
 
 /// الفلاتر البصرية المطبقة على صور الدفاتر والوثائق قبل التصدير إلى PDF.
 enum DocumentColorFilter {
-  highContrastBw(title: 'أبيض وأسود للوثائق (تباين عالٍ)'),
-  grayscale(title: 'تدرج رمادي هادئ'),
-  originalColor(title: 'ملون أصلي');
+  highContrastBw(title: 'أبيض وأسود'),
+  grayscale(title: 'رمادي'),
+  originalColor(title: 'ملون');
 
   const DocumentColorFilter({required this.title});
   final String title;
