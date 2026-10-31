@@ -276,13 +276,11 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
         pickedFiles = await FilePicker.pickFiles(
           type: FileType.custom,
           allowedExtensions: extensions,
-          withData: kIsWeb,
         );
       } else {
         final single = await FilePicker.pickFile(
           type: FileType.custom,
           allowedExtensions: extensions,
-          withData: kIsWeb,
         );
         pickedFiles = single != null
             ? <PlatformFile>[single]
@@ -295,8 +293,7 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
       }
 
       for (final platformFile in pickedFiles) {
-        final bytes =
-            platformFile.bytes ?? await platformFile.xFile.readAsBytes();
+        final bytes = await platformFile.xFile.readAsBytes();
         final resolvedPath = await PlatformStorage.registerPickedBytes(
           fileName: platformFile.name,
           nativePath: kIsWeb ? null : platformFile.path,
