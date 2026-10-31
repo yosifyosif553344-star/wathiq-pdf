@@ -12,7 +12,14 @@ external _DomUrl get _url;
 
 @JS('Blob')
 extension type _DomBlob._(JSObject _) implements JSObject {
-  external factory _DomBlob(JSArray<JSAny?> blobParts);
+  external factory _DomBlob(
+    JSArray<JSAny?> blobParts, [
+    _BlobPropertyBag options,
+  ]);
+}
+
+extension type _BlobPropertyBag._(JSObject _) implements JSObject {
+  external factory _BlobPropertyBag({JSString type});
 }
 
 extension type _DomDocument(JSObject _) implements JSObject {
@@ -123,9 +130,12 @@ class PlatformStorage {
   }
 
   static void _triggerBrowserDownload(String fileName, Uint8List bytes) {
+    final mime = fileName.toLowerCase().endsWith('.txt')
+        ? 'text/plain;charset=utf-8'
+        : 'application/pdf';
     try {
       final parts = <JSAny?>[bytes.toJS].toJS;
-      final blob = _DomBlob(parts);
+      final blob = _DomBlob(parts, _BlobPropertyBag(type: mime.toJS));
       final objectUrl = _url.createObjectURL(blob);
       final anchor = _document.createElement('a'.toJS);
       anchor.href = objectUrl;
@@ -135,9 +145,6 @@ class PlatformStorage {
         _url.revokeObjectURL(objectUrl);
       });
     } catch (_) {
-      final mime = fileName.toLowerCase().endsWith('.txt')
-          ? 'text/plain;charset=utf-8'
-          : 'application/pdf';
       final b64 = base64Encode(bytes);
       final anchor = _document.createElement('a'.toJS);
       anchor.href = 'data:$mime;base64,$b64'.toJS;

@@ -352,8 +352,9 @@ class PdfOperationsRepository {
       );
       final result = await _isolateService.buildPdfFromRenderedPages(
         pagePngList: pageBitmaps,
-        outputPath: '${outDir}/$cleanName',
+        outputPath: '$outDir/$cleanName',
         originalBytesHint: originalBytesHint,
+        embeddedPlainText: '$title\n\n$bodyText',
       );
       return _saveToHistory(
         fileName: cleanName,

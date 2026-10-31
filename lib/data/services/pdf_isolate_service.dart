@@ -289,30 +289,76 @@ class PdfIsolateService {
     return PlatformStorage.runTask(() {
       final stopwatch = Stopwatch()..start();
       final inputBytes = PlatformStorage.readBytesSync(inputPath);
-      final document = PdfDocument(inputBytes: inputBytes);
+      final sourceDoc = PdfDocument(inputBytes: inputBytes);
 
       try {
-        document.compressionLevel = switch (level) {
+        final totalPages = sourceDoc.pages.count;
+        final syncCompression = switch (level) {
           CompressionLevel.light => PdfCompressionLevel.aboveNormal,
           CompressionLevel.medium => PdfCompressionLevel.best,
           CompressionLevel.extreme => PdfCompressionLevel.best,
         };
 
-        document.fileStructure.incrementalUpdate = false;
+        var bestBytes = inputBytes;
 
-        final outBytes = Uint8List.fromList(document.saveSync());
-        PlatformStorage.writeBytesSync(outputPath, outBytes);
+        // 1. إعادة بناء صفحات الوثيقة في ملف جديد مضغوط بدون كائنات تالفة أو تحديثات تراكمية
+        final rebuiltDoc = PdfDocument();
+        try {
+          rebuiltDoc.compressionLevel = syncCompression;
+          for (var i = 0; i < totalPages; i++) {
+            final srcPage = sourceDoc.pages[i];
+            final section = rebuiltDoc.sections!.add();
+            section.pageSettings.size = srcPage.size;
+            section.pageSettings.margins.all = 0;
+            final newPage = section.pages.add();
+            newPage.graphics.drawPdfTemplate(
+              srcPage.createTemplate(),
+              Offset.zero,
+            );
+          }
+          final rebuiltBytes = Uint8List.fromList(rebuiltDoc.saveSync());
+          if (rebuiltBytes.isNotEmpty && rebuiltBytes.length < bestBytes.length) {
+            bestBytes = rebuiltBytes;
+          }
+        } catch (_) {
+          // في حال تعذر نسخ القوالب لبعض الصفحات المعقدة نحتفظ بالنسخة الأصلية للمرحلة التالية
+        } finally {
+          rebuiltDoc.dispose();
+        }
+
+        // 2. محاولة ضغط تيارات الكائنات مباشرة عبر حفظ الوثيقة بأعلى مستوى ضغط
+        try {
+          sourceDoc.compressionLevel = syncCompression;
+          final directBytes = Uint8List.fromList(sourceDoc.saveSync());
+          if (directBytes.isNotEmpty && directBytes.length < bestBytes.length) {
+            bestBytes = directBytes;
+          }
+        } catch (_) {
+          // تجاهل أي خطأ في جدول المراجع المتقاطعة لبعض الملفات القديمة
+        }
+
+        // 3. ضغط الصور المضمنة (JPEG Streams) داخل هيكل الـ PDF وتحديث جدول المراجع
+        final imageCompressedBytes = _recompressEmbeddedJpegsInPdf(
+          pdfBytes: bestBytes,
+          level: level,
+          expectedPages: totalPages,
+        );
+        if (imageCompressedBytes.length < bestBytes.length) {
+          bestBytes = imageCompressedBytes;
+        }
+
+        PlatformStorage.writeBytesSync(outputPath, bestBytes);
         stopwatch.stop();
 
         return IsolatePdfOutput(
           outputFilePaths: [outputPath],
           originalSizeBytes: inputBytes.length,
-          finalSizeBytes: outBytes.length,
-          pageCount: document.pages.count,
+          finalSizeBytes: bestBytes.length,
+          pageCount: totalPages,
           durationMs: stopwatch.elapsedMilliseconds,
         );
       } finally {
-        document.dispose();
+        sourceDoc.dispose();
       }
     });
   }
@@ -624,7 +670,7 @@ class PdfIsolateService {
     });
   }
 
-  /// يستخرج نصوص ملف الـ PDF ويحفظها في ملف TXT.
+  /// يستخرج نصوص ملف الـ PDF ويحفظها في ملف TXT بترميز UTF-8 مع BOM لدعم العربية بالكامل.
   Future<IsolatePdfOutput> extractPdfText({
     required String inputPath,
     required String outputPath,
@@ -638,17 +684,52 @@ class PdfIsolateService {
         final extractor = PdfTextExtractor(document);
         final totalPages = document.pages.count;
         final buffer = StringBuffer();
+
+        // التحقق مما إذا كان الملف منشأً داخل التطبيق مع نص عربي مضمّن
+        final embeddedKw = document.documentInformation.keywords;
+        String? embeddedFullText;
+        if (embeddedKw.startsWith('WATHIQ_TEXT_B64:')) {
+          try {
+            final b64 = embeddedKw.substring('WATHIQ_TEXT_B64:'.length);
+            embeddedFullText = utf8.decode(base64Decode(b64));
+          } catch (_) {
+            embeddedFullText = null;
+          }
+        }
+
+        var hasExtractedAnyText = false;
         for (var i = 0; i < totalPages; i++) {
-          final pageText = extractor
+          final rawPageText = extractor
               .extractText(startPageIndex: i, endPageIndex: i)
               .trim();
+          final normalizedPageText = _normalizeExtractedArabicText(rawPageText);
+          if (normalizedPageText.isNotEmpty) {
+            hasExtractedAnyText = true;
+          }
           buffer
             ..writeln('--- صفحة ${i + 1} ---')
-            ..writeln(pageText)
+            ..writeln(normalizedPageText)
             ..writeln();
         }
 
-        final encodedBytes = utf8.encode(buffer.toString());
+        if (!hasExtractedAnyText &&
+            embeddedFullText != null &&
+            embeddedFullText.trim().isNotEmpty) {
+          buffer
+            ..clear()
+            ..writeln('--- النص المستخرج ---')
+            ..writeln(embeddedFullText.trim())
+            ..writeln();
+        }
+
+        final utf8Content = utf8.encode(buffer.toString());
+        // إضافة علامة ترتيب البايتات UTF-8 BOM (0xEF, 0xBB, 0xBF) لضمان قراءة العربية بشكل سليم في المتصفح والهاتف
+        final encodedBytes = Uint8List(3 + utf8Content.length)
+          ..[0] = 0xEF
+          ..[1] = 0xBB
+          ..[2] = 0xBF
+          ..setRange(3, 3 + utf8Content.length, utf8Content);
+
         PlatformStorage.writeBytesSync(outputPath, encodedBytes);
         stopwatch.stop();
 
@@ -670,6 +751,7 @@ class PdfIsolateService {
     required List<Uint8List> pagePngList,
     required String outputPath,
     int originalBytesHint = 0,
+    String embeddedPlainText = '',
   }) async {
     return PlatformStorage.runTask(() {
       final stopwatch = Stopwatch()..start();
@@ -677,6 +759,10 @@ class PdfIsolateService {
       document.pageSettings.margins.all = 0;
 
       try {
+        if (embeddedPlainText.trim().isNotEmpty) {
+          document.documentInformation.keywords =
+              'WATHIQ_TEXT_B64:${base64Encode(utf8.encode(embeddedPlainText))}';
+        }
         for (final pngBytes in pagePngList) {
           final bitmap = PdfBitmap(pngBytes);
           final section = document.sections!.add();
@@ -707,6 +793,352 @@ class PdfIsolateService {
       }
     });
   }
+
+  /// يضغط تيارات الصور المضمنة (JPEG / DCTDecode) داخل ملف الـ PDF ويعيد بناء جدول المراجع (xref).
+  static Uint8List _recompressEmbeddedJpegsInPdf({
+    required Uint8List pdfBytes,
+    required CompressionLevel level,
+    required int expectedPages,
+  }) {
+    try {
+      final rawText = latin1.decode(pdfBytes);
+      final xrefPos = rawText.lastIndexOf('xref');
+      if (xrefPos <= 0) return pdfBytes;
+
+      final maxDim = switch (level) {
+        CompressionLevel.light => 2200,
+        CompressionLevel.medium => 1400,
+        CompressionLevel.extreme => 960,
+      };
+
+      final streamPattern = RegExp(r'stream\r?\n');
+      final lengthPattern = RegExp(r'/Length\s+(\d+)');
+      final objHeaderPattern = RegExp(r'(\d+)\s+0\s+obj\b');
+
+      final outBuffer = BytesBuilder(copy: false);
+      var cursor = 0;
+      var changedAny = false;
+
+      for (final match in objHeaderPattern.allMatches(rawText)) {
+        if (match.start < cursor || match.start >= xrefPos) continue;
+        final endObjIdx = rawText.indexOf('endobj', match.end);
+        if (endObjIdx < 0 || endObjIdx > xrefPos) continue;
+        final objEnd = endObjIdx + 6;
+
+        final objSlice = rawText.substring(match.start, objEnd);
+        if (objSlice.contains('/DCTDecode')) {
+          final streamMatch = streamPattern.firstMatch(objSlice);
+          final endStreamRel = objSlice.lastIndexOf('endstream');
+          final lenMatch = lengthPattern.firstMatch(objSlice);
+
+          if (streamMatch != null &&
+              endStreamRel > streamMatch.end &&
+              lenMatch != null) {
+            final streamDataStart = match.start + streamMatch.end;
+            var streamDataEnd = match.start + endStreamRel;
+            if (streamDataEnd > streamDataStart &&
+                pdfBytes[streamDataEnd - 1] == 0x0A) {
+              streamDataEnd--;
+              if (streamDataEnd > streamDataStart &&
+                  pdfBytes[streamDataEnd - 1] == 0x0D) {
+                streamDataEnd--;
+              }
+            }
+
+            if (streamDataEnd > streamDataStart + 16) {
+              final origJpeg = Uint8List.sublistView(
+                pdfBytes,
+                streamDataStart,
+                streamDataEnd,
+              );
+              final decodedImg = img.decodeJpg(origJpeg);
+              if (decodedImg != null) {
+                var working = decodedImg;
+                if (working.width > maxDim || working.height > maxDim) {
+                  working = working.width >= working.height
+                      ? img.copyResize(working, width: maxDim)
+                      : img.copyResize(working, height: maxDim);
+                }
+                final reencoded = Uint8List.fromList(
+                  img.encodeJpg(working, quality: level.imageQuality),
+                );
+                if (reencoded.length + 64 < origJpeg.length) {
+                  outBuffer.add(
+                    Uint8List.sublistView(pdfBytes, cursor, match.start),
+                  );
+                  final dictPart = objSlice
+                      .substring(0, streamMatch.end)
+                      .replaceFirst(
+                        lengthPattern,
+                        '/Length ${reencoded.length}',
+                      );
+                  outBuffer.add(latin1.encode(dictPart));
+                  outBuffer.add(reencoded);
+                  outBuffer.add(latin1.encode('\r\nendstream\r\nendobj'));
+                  cursor = objEnd;
+                  changedAny = true;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (!changedAny) return pdfBytes;
+
+      outBuffer.add(Uint8List.sublistView(pdfBytes, cursor, xrefPos));
+      final bodyBytes = outBuffer.toBytes();
+      final bodyText = latin1.decode(bodyBytes);
+
+      final offsets = <int, int>{};
+      var maxObjNum = 0;
+      for (final m in objHeaderPattern.allMatches(bodyText)) {
+        final id = int.tryParse(m.group(1)!);
+        if (id != null) {
+          offsets[id] = m.start;
+          if (id > maxObjNum) maxObjNum = id;
+        }
+      }
+
+      final trailerIdx = rawText.indexOf('trailer', xrefPos);
+      if (trailerIdx < 0) return pdfBytes;
+      final startXrefIdx = rawText.indexOf('startxref', trailerIdx);
+      if (startXrefIdx < 0) return pdfBytes;
+      final trailerDict = rawText.substring(trailerIdx, startXrefIdx);
+
+      final newXrefOffset = bodyBytes.length;
+      final xrefBuf = StringBuffer()
+        ..write('xref\r\n')
+        ..write('0 ${maxObjNum + 1}\r\n')
+        ..write('0000000000 65535 f \r\n');
+
+      for (var i = 1; i <= maxObjNum; i++) {
+        final off = offsets[i];
+        if (off != null) {
+          xrefBuf.write('${off.toString().padLeft(10, '0')} 00000 n \r\n');
+        } else {
+          xrefBuf.write('0000000000 65535 f \r\n');
+        }
+      }
+
+      xrefBuf
+        ..write(trailerDict)
+        ..write('startxref\r\n$newXrefOffset\r\n%%EOF\r\n');
+
+      final finalBuilder = BytesBuilder(copy: false)
+        ..add(bodyBytes)
+        ..add(latin1.encode(xrefBuf.toString()));
+      final candidate = finalBuilder.toBytes();
+
+      final verifyDoc = PdfDocument(inputBytes: candidate);
+      final validCount = verifyDoc.pages.count;
+      verifyDoc.dispose();
+      if (validCount == expectedPages) {
+        return candidate;
+      }
+    } catch (_) {
+      // في حال وجود تشفير أو تيارات معقدة نعود للنسخة الآمنة
+    }
+    return pdfBytes;
+  }
+
+  /// يعالج النصوص العربية المستخرجة من الـ PDF (تطبيع الحروف الموصولة وإصلاح الانعكاس البصري).
+  static String _normalizeExtractedArabicText(String input) {
+    if (input.isEmpty) return '';
+
+    final rawLines = input.split(RegExp(r'\r?\n'));
+    final processedLines = <String>[];
+
+    for (final rawLine in rawLines) {
+      if (rawLine.trim().isEmpty) {
+        processedLines.add('');
+        continue;
+      }
+
+      final presentationOrderScore = _scorePresentationFormVisualOrder(rawLine);
+      final normalizedChars = _replaceArabicPresentationForms(rawLine);
+      final reversedScore = _scoreReversedArabicHeuristic(normalizedChars);
+
+      if (presentationOrderScore > 0 || reversedScore > 0) {
+        processedLines.add(_reverseVisualArabicLine(normalizedChars));
+      } else {
+        processedLines.add(normalizedChars);
+      }
+    }
+
+    return processedLines.join('\n');
+  }
+
+  /// يفحص ما إذا كانت أشكال الحروف العربية الموصولة (Presentation Forms-B) مرتبة بصرياً من اليسار لليمين.
+  static int _scorePresentationFormVisualOrder(String line) {
+    var visualCount = 0;
+    var logicalCount = 0;
+    final words = line.trim().split(RegExp(r'\s+'));
+    for (final w in words) {
+      if (w.length < 2) continue;
+      final firstForm = _presentationFormKind(w.codeUnitAt(0));
+      final lastForm = _presentationFormKind(w.codeUnitAt(w.length - 1));
+      // في الترتيب المنطقي تبدأ الكلمة بحرف ابتدائي وتنتهي بحرف نهائي، والعكس في الترتيب البصري المعكوس
+      if (firstForm == 1 && lastForm == 2) {
+        visualCount += 2;
+      } else if (firstForm == 1) {
+        visualCount += 1;
+      } else if (lastForm == 2) {
+        visualCount += 1;
+      } else if (firstForm == 2 && lastForm == 1) {
+        logicalCount += 2;
+      } else if (firstForm == 2 || lastForm == 1) {
+        logicalCount += 1;
+      }
+    }
+    return visualCount - logicalCount;
+  }
+
+  /// 1 = Final (نهائي), 2 = Initial (ابتدائي), 0 = غير ذلك.
+  static int _presentationFormKind(int code) {
+    // الحروف التي لها 4 أشكال في النطاق FE8D..FEFC
+    const fourFormBases = <int>[
+      0xFE8F, 0xFE95, 0xFE99, 0xFE9D, 0xFEA1, 0xFEA5,
+      0xFEB1, 0xFEB5, 0xFEB9, 0xFEBD, 0xFEC1, 0xFEC5,
+      0xFEC9, 0xFECD, 0xFED1, 0xFED5, 0xFED9, 0xFEDD,
+      0xFEE1, 0xFEE5, 0xFEE9, 0xFEF1,
+    ];
+    for (final base in fourFormBases) {
+      if (code == base + 1) return 1; // Final
+      if (code == base + 2) return 2; // Initial
+    }
+    // الحروف التي لها شكلان فقط (منفصل + نهائي): ا، أ، إ، آ، ة، د، ذ، ر، ز، و، ى
+    const twoFormFinals = <int>[
+      0xFE82, 0xFE84, 0xFE88, 0xFE8E, 0xFE94,
+      0xFEAA, 0xFEAC, 0xFEAE, 0xFEB0, 0xFEEE, 0xFEF0,
+      0xFEF6, 0xFEF8, 0xFEFA, 0xFEFC,
+    ];
+    if (twoFormFinals.contains(code)) return 1;
+    return 0;
+  }
+
+  /// يفحص الكلمات العربية بعد التطبيع لاكتشاف الانعكاس البصري (مثل: "ةحفص" بدل "صفحة" أو "ملاسلا" بدل "السلام").
+  static int _scoreReversedArabicHeuristic(String line) {
+    var reversedScore = 0;
+    var logicalScore = 0;
+    final words = line.trim().split(RegExp(r'\s+'));
+
+    for (final rawWord in words) {
+      final w = rawWord.replaceAll(
+        RegExp(r'[^\u0621-\u064A]'),
+        '',
+      );
+      if (w.length < 2) continue;
+
+      // التاء المربوطة (ة) والألف المقصورة (ى) لا تأتيان في بداية الكلمة العربية أبداً
+      if (w.startsWith('ة') || w.startsWith('ى')) {
+        reversedScore += 3;
+      }
+      if (w.endsWith('ة') || w.endsWith('ى')) {
+        logicalScore += 3;
+      }
+      // "ال" التعريف في بداية الكلمة مقابل "لا..." في نهاية الكلمة المعكوسة
+      if (w.length >= 4 && w.startsWith('ال')) {
+        logicalScore += 2;
+      }
+      if (w.length >= 4 &&
+          w.endsWith('لا') &&
+          w != 'إلا' &&
+          w != 'ألا' &&
+          w != 'كلا' &&
+          w != 'بلا' &&
+          w != 'حالا' &&
+          w != 'فعلا' &&
+          w != 'مثلا' &&
+          w != 'أولا') {
+        reversedScore += 2;
+      }
+      if (w == 'يف' || w == 'نم' || w == 'ىلع' || w == 'ىلإ' || w == 'نع' || w == 'مسب' || w == 'هللا') {
+        reversedScore += 3;
+      }
+      if (w == 'في' || w == 'من' || w == 'على' || w == 'إلى' || w == 'عن' || w == 'بسم' || w == 'الله') {
+        logicalScore += 3;
+      }
+    }
+    return reversedScore - logicalScore;
+  }
+
+  /// يعكس السطر العربي المعكوس بصرياً مع الحفاظ على ترتيب الأرقام والكلمات الإنجليزية.
+  static String _reverseVisualArabicLine(String line) {
+    final reversedChars = line.runes.toList().reversed;
+    final reversedString = String.fromCharCodes(reversedChars);
+    // إعادة عكس الأرقام والكلمات اللاتينية حتى لا تنقلب (مثل 2026 أو PDF)
+    return reversedString.replaceAllMapped(
+      RegExp(r'[A-Za-z0-9]+(?:[./:-][A-Za-z0-9]+)*'),
+      (m) => String.fromCharCodes(m.group(0)!.runes.toList().reversed),
+    );
+  }
+
+  /// يحول رموز Arabic Presentation Forms (FE70..FEFC & FB50..FDFF) إلى حروف عربية قياسية (0600..06FF).
+  static String _replaceArabicPresentationForms(String text) {
+    final sb = StringBuffer();
+    for (final rune in text.runes) {
+      switch (rune) {
+        case 0xFEF5 || 0xFEF6:
+          sb.write('لآ');
+        case 0xFEF7 || 0xFEF8:
+          sb.write('لأ');
+        case 0xFEF9 || 0xFEFA:
+          sb.write('لإ');
+        case 0xFEFB || 0xFEFC:
+          sb.write('لا');
+        case 0xFDF2:
+          sb.write('الله');
+        default:
+          final mapped = _presentationRuneToStandard[rune];
+          if (mapped != null) {
+            sb.writeCharCode(mapped);
+          } else {
+            sb.writeCharCode(rune);
+          }
+      }
+    }
+    return sb.toString();
+  }
+
+  static const Map<int, int> _presentationRuneToStandard = <int, int>{
+    0xFE80: 0x0621, // ء
+    0xFE81: 0x0622, 0xFE82: 0x0622, // آ
+    0xFE83: 0x0623, 0xFE84: 0x0623, // أ
+    0xFE85: 0x0624, 0xFE86: 0x0624, // ؤ
+    0xFE87: 0x0625, 0xFE88: 0x0625, // إ
+    0xFE89: 0x0626, 0xFE8A: 0x0626, 0xFE8B: 0x0626, 0xFE8C: 0x0626, // ئ
+    0xFE8D: 0x0627, 0xFE8E: 0x0627, // ا
+    0xFE8F: 0x0628, 0xFE90: 0x0628, 0xFE91: 0x0628, 0xFE92: 0x0628, // ب
+    0xFE93: 0x0629, 0xFE94: 0x0629, // ة
+    0xFE95: 0x062A, 0xFE96: 0x062A, 0xFE97: 0x062A, 0xFE98: 0x062A, // ت
+    0xFE99: 0x062B, 0xFE9A: 0x062B, 0xFE9B: 0x062B, 0xFE9C: 0x062B, // ث
+    0xFE9D: 0x062C, 0xFE9E: 0x062C, 0xFE9F: 0x062C, 0xFEA0: 0x062C, // ج
+    0xFEA1: 0x062D, 0xFEA2: 0x062D, 0xFEA3: 0x062D, 0xFEA4: 0x062D, // ح
+    0xFEA5: 0x062E, 0xFEA6: 0x062E, 0xFEA7: 0x062E, 0xFEA8: 0x062E, // خ
+    0xFEA9: 0x062F, 0xFEAA: 0x062F, // د
+    0xFEAB: 0x0630, 0xFEAC: 0x0630, // ذ
+    0xFEAD: 0x0631, 0xFEAE: 0x0631, // ر
+    0xFEAF: 0x0632, 0xFEB0: 0x0632, // ز
+    0xFEB1: 0x0633, 0xFEB2: 0x0633, 0xFEB3: 0x0633, 0xFEB4: 0x0633, // س
+    0xFEB5: 0x0634, 0xFEB6: 0x0634, 0xFEB7: 0x0634, 0xFEB8: 0x0634, // ش
+    0xFEB9: 0x0635, 0xFEBA: 0x0635, 0xFEBB: 0x0635, 0xFEBC: 0x0635, // ص
+    0xFEBD: 0x0636, 0xFEBE: 0x0636, 0xFEBF: 0x0636, 0xFEC0: 0x0636, // ض
+    0xFEC1: 0x0637, 0xFEC2: 0x0637, 0xFEC3: 0x0637, 0xFEC4: 0x0637, // ط
+    0xFEC5: 0x0638, 0xFEC6: 0x0638, 0xFEC7: 0x0638, 0xFEC8: 0x0638, // ظ
+    0xFEC9: 0x0639, 0xFECA: 0x0639, 0xFECB: 0x0639, 0xFECC: 0x0639, // ع
+    0xFECD: 0x063A, 0xFECE: 0x063A, 0xFECF: 0x063A, 0xFED0: 0x063A, // غ
+    0xFED1: 0x0641, 0xFED2: 0x0641, 0xFED3: 0x0641, 0xFED4: 0x0641, // ف
+    0xFED5: 0x0642, 0xFED6: 0x0642, 0xFED7: 0x0642, 0xFED8: 0x0642, // ق
+    0xFED9: 0x0643, 0xFEDA: 0x0643, 0xFEDB: 0x0643, 0xFEDC: 0x0643, // ك
+    0xFEDD: 0x0644, 0xFEDE: 0x0644, 0xFEDF: 0x0644, 0xFEE0: 0x0644, // ل
+    0xFEE1: 0x0645, 0xFEE2: 0x0645, 0xFEE3: 0x0645, 0xFEE4: 0x0645, // م
+    0xFEE5: 0x0646, 0xFEE6: 0x0646, 0xFEE7: 0x0646, 0xFEE8: 0x0646, // ن
+    0xFEE9: 0x0647, 0xFEEA: 0x0647, 0xFEEB: 0x0647, 0xFEEC: 0x0647, // ه
+    0xFEED: 0x0648, 0xFEEE: 0x0648, // و
+    0xFEEF: 0x0649, 0xFEF0: 0x0649, // ى
+    0xFEF1: 0x064A, 0xFEF2: 0x064A, 0xFEF3: 0x064A, 0xFEF4: 0x064A, // ي
+  };
 
   static PdfPageRotateAngle _mapRotationAngle(int degrees) {
     final normalized = degrees % 360;
