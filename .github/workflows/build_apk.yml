@@ -1,4 +1,4 @@
-name: Build Wathiq PDF Android APK
+name: Build Wathiq PDF APK & Web
 
 on:
   push:
@@ -7,8 +7,51 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
+  build-web:
+    name: Build & Deploy Flutter Web (GitHub Pages)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter Stable
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Generate Web Platform Scaffolding
+        run: |
+          mkdir -p /tmp/wathiq_web_backup
+          cp pubspec.yaml /tmp/wathiq_web_backup/pubspec.yaml
+          cp -r lib /tmp/wathiq_web_backup/lib
+          cp -r test /tmp/wathiq_web_backup/test
+          rm -rf web
+          flutter create --platforms=web --project-name wathiq_pdf .
+          cp /tmp/wathiq_web_backup/pubspec.yaml pubspec.yaml
+          rm -rf lib test
+          cp -r /tmp/wathiq_web_backup/lib lib
+          cp -r /tmp/wathiq_web_backup/test test
+          sed -i 's/<title>wathiq_pdf<\/title>/<title>وثيق PDF<\/title>/g' web/index.html || true
+
+      - name: Install Flutter Dependencies
+        run: flutter pub get
+
+      - name: Build Flutter Web Release
+        run: flutter build web --release --base-href "/wathiq-pdf/" --no-tree-shake-icons
+
+      - name: Deploy to GitHub Pages (gh-pages branch)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
+          force_orphan: true
+
   build-android-apk:
     name: Build Release APK (وثيق PDF)
     runs-on: ubuntu-latest
@@ -49,14 +92,12 @@ jobs:
           with open(manifest_path, "r", encoding="utf-8") as f:
               content = f.read()
 
-          # إزالة أي صلاحية إنترنت لضمان الخصوصية المحلية 100%
           lines = [
               line for line in content.splitlines()
               if "android.permission.INTERNET" not in line
           ]
           content = "\n".join(lines)
 
-          # تحديث اسم التطبيق إلى وثيق PDF وإضافة صلاحية الكاميرا للمسح الضوئي
           content = content.replace('android:label="wathiq_pdf"', 'android:label="وثيق PDF"')
           if "android.permission.CAMERA" not in content:
               content = content.replace(
@@ -67,8 +108,6 @@ jobs:
 
           with open(manifest_path, "w", encoding="utf-8") as f:
               f.write(content)
-          print("Updated AndroidManifest.xml:")
-          print(content)
           EOF
 
       - name: Install Flutter Dependencies
@@ -97,13 +136,12 @@ jobs:
           tag_name: v1.0.${{ github.run_number }}
           name: "وثيق PDF - إصدار الأندرويد (v1.0.${{ github.run_number }})"
           body: |
-            ### تطبيق وثيق PDF (Wathiq PDF) - معالجة محلية 100% بدون إنترنت
-            - **دمج الملفات (Merge PDF)** مع السحب والإفلات
-            - **تقسيم الملفات (Split PDF)** بالنطاق أو فصل كل صفحة
-            - **ترتيب وحذف وتدوير الصفحات (Organize Pages)**
-            - **ضغط حجم الملف (Compress PDF)** بـ 3 مستويات مع عرض الحجم قبل وبعد
-            - **تحويل الصور والكاميرا إلى PDF (Scanner to PDF)**
-            - **خصوصية مطلقة:** يعمل داخل خيوط معالجة معزولة (`Dart Isolates`) ولا يطلب صلاحية الإنترنت.
+            ### تطبيق وثيق PDF (Wathiq PDF) - 15 أداة PDF محلية 100%
+            - **تنظيم الصفحات:** دمج، تقسيم، ضغط، ترتيب الصفحات، تدوير.
+            - **تحرير وتوقيع:** توقيع يدوي، إضافة نص، علامة مائية، ترقيم الصفحات.
+            - **إنشاء واستخراج:** صور إلى PDF، ملف جديد، استخراج النص.
+            - **الحماية والأمان:** قفل بكلمة مرور، فك القفل، إصلاح.
+            - **نسخة الويب المباشرة (Flutter Web):** https://yosifyosif553344-star.github.io/wathiq-pdf/
           files: build/app/outputs/flutter-apk/Wathiq-PDF-v1.0.0.apk
           draft: false
           prerelease: false

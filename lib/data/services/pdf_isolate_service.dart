@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
-import 'dart:isolate';
 import 'dart:typed_data';
 import 'dart:ui' show Offset, Rect, Size;
 
@@ -10,8 +8,9 @@ import 'package:syncfusion_flutter_pdf/pdf.dart';
 import '../../domain/models/compression_preset.dart';
 import '../../domain/models/page_instruction.dart';
 import '../../domain/models/scanner_options.dart';
+import 'platform_storage.dart';
 
-/// مخرجات العملية المنفذة داخل الخيط الخلفي (Dart Isolate).
+/// مخرجات العملية المنفذة داخل الخيط الخلفي (Dart Isolate أو Web Task).
 class IsolatePdfOutput {
   const IsolatePdfOutput({
     required this.outputFilePaths,
@@ -41,16 +40,16 @@ enum PageNumberPosition {
   final String title;
 }
 
-/// خدمة معالجة الـ PDF والأوفيس والصور داخل خيوط خلفية منفصلة (Dart Isolates).
+/// خدمة معالجة الـ PDF داخل خيوط خلفية منفصلة على الأندرويد/iOS أو محلياً داخل المتصفح.
 class PdfIsolateService {
   const PdfIsolateService();
 
-  /// يدمج ملفين أو أكثر في ملف PDF موحد داخل Isolate مستقل.
+  /// يدمج ملفين أو أكثر في ملف PDF موحد.
   Future<IsolatePdfOutput> mergePdfs({
     required List<String> inputPaths,
     required String outputPath,
   }) async {
-    return Isolate.run(() {
+    return PlatformStorage.runTask(() {
       final stopwatch = Stopwatch()..start();
       final outputDocument = PdfDocument();
       outputDocument.pageSettings.margins.all = 0;
@@ -60,7 +59,7 @@ class PdfIsolateService {
 
       try {
         for (final path in inputPaths) {
-          final bytes = File(path).readAsBytesSync();
+          final bytes = PlatformStorage.readBytesSync(path);
           totalOriginalBytes += bytes.length;
           final sourceDoc = PdfDocument(inputBytes: bytes);
           try {
@@ -80,7 +79,7 @@ class PdfIsolateService {
         }
 
         final savedBytes = Uint8List.fromList(outputDocument.saveSync());
-        File(outputPath).writeAsBytesSync(savedBytes, flush: true);
+        PlatformStorage.writeBytesSync(outputPath, savedBytes);
         stopwatch.stop();
 
         return IsolatePdfOutput(
@@ -96,7 +95,7 @@ class PdfIsolateService {
     });
   }
 
-  /// يستخرج صفحات محددة في ملف جديد أو يفصل كل صفحة في ملف PDF مستقل داخل Isolate.
+  /// يستخرج صفحات محددة في ملف جديد أو يفصل كل صفحة في ملف PDF مستقل.
   Future<IsolatePdfOutput> splitPdf({
     required String inputPath,
     required String outputDirectory,
@@ -104,9 +103,9 @@ class PdfIsolateService {
     required List<int> oneBasedPages,
     required bool burstEachPageIntoSeparateFile,
   }) async {
-    return Isolate.run(() {
+    return PlatformStorage.runTask(() {
       final stopwatch = Stopwatch()..start();
-      final inputBytes = File(inputPath).readAsBytesSync();
+      final inputBytes = PlatformStorage.readBytesSync(inputPath);
       final sourceDoc = PdfDocument(inputBytes: inputBytes);
 
       try {
@@ -128,7 +127,7 @@ class PdfIsolateService {
               final outPath =
                   '$outputDirectory/${baseOutputFileName}_page_${(i + 1).toString().padLeft(2, '0')}.pdf';
               final outBytes = Uint8List.fromList(singleDoc.saveSync());
-              File(outPath).writeAsBytesSync(outBytes, flush: true);
+              PlatformStorage.writeBytesSync(outPath, outBytes);
               generatedPaths.add(outPath);
               totalFinalBytes += outBytes.length;
             } finally {
@@ -165,7 +164,7 @@ class PdfIsolateService {
 
             final outPath = '$outputDirectory/$baseOutputFileName.pdf';
             final outBytes = Uint8List.fromList(extractedDoc.saveSync());
-            File(outPath).writeAsBytesSync(outBytes, flush: true);
+            PlatformStorage.writeBytesSync(outPath, outBytes);
             stopwatch.stop();
 
             return IsolatePdfOutput(
@@ -185,15 +184,15 @@ class PdfIsolateService {
     });
   }
 
-  /// يعيد ترتيب الصفحات ويطبق التدوير (90°/180°/270°) ويحذف الصفحات المستبعدة داخل Isolate.
+  /// يعيد ترتيب الصفحات ويطبق التدوير (90°/180°/270°) ويحذف الصفحات المستبعدة.
   Future<IsolatePdfOutput> organizePages({
     required String inputPath,
     required String outputPath,
     required List<PdfPageInstruction> instructions,
   }) async {
-    return Isolate.run(() {
+    return PlatformStorage.runTask(() {
       final stopwatch = Stopwatch()..start();
-      final inputBytes = File(inputPath).readAsBytesSync();
+      final inputBytes = PlatformStorage.readBytesSync(inputPath);
       final sourceDoc = PdfDocument(inputBytes: inputBytes);
       final targetDoc = PdfDocument();
 
@@ -219,7 +218,7 @@ class PdfIsolateService {
         }
 
         final outBytes = Uint8List.fromList(targetDoc.saveSync());
-        File(outputPath).writeAsBytesSync(outBytes, flush: true);
+        PlatformStorage.writeBytesSync(outputPath, outBytes);
         stopwatch.stop();
 
         return IsolatePdfOutput(
@@ -242,9 +241,9 @@ class PdfIsolateService {
     required String outputPath,
     required int rotationDegrees,
   }) async {
-    return Isolate.run(() {
+    return PlatformStorage.runTask(() {
       final stopwatch = Stopwatch()..start();
-      final inputBytes = File(inputPath).readAsBytesSync();
+      final inputBytes = PlatformStorage.readBytesSync(inputPath);
       final sourceDoc = PdfDocument(inputBytes: inputBytes);
       final targetDoc = PdfDocument();
 
@@ -264,7 +263,7 @@ class PdfIsolateService {
         }
 
         final outBytes = Uint8List.fromList(targetDoc.saveSync());
-        File(outputPath).writeAsBytesSync(outBytes, flush: true);
+        PlatformStorage.writeBytesSync(outputPath, outBytes);
         stopwatch.stop();
 
         return IsolatePdfOutput(
@@ -281,15 +280,15 @@ class PdfIsolateService {
     });
   }
 
-  /// يضغط ملف PDF وفق المستوى المختار داخل Isolate.
+  /// يضغط ملف PDF وفق المستوى المختار.
   Future<IsolatePdfOutput> compressPdf({
     required String inputPath,
     required String outputPath,
     required CompressionLevel level,
   }) async {
-    return Isolate.run(() {
+    return PlatformStorage.runTask(() {
       final stopwatch = Stopwatch()..start();
-      final inputBytes = File(inputPath).readAsBytesSync();
+      final inputBytes = PlatformStorage.readBytesSync(inputPath);
       final document = PdfDocument(inputBytes: inputBytes);
 
       try {
@@ -302,7 +301,7 @@ class PdfIsolateService {
         document.fileStructure.incrementalUpdate = false;
 
         final outBytes = Uint8List.fromList(document.saveSync());
-        File(outputPath).writeAsBytesSync(outBytes, flush: true);
+        PlatformStorage.writeBytesSync(outputPath, outBytes);
         stopwatch.stop();
 
         return IsolatePdfOutput(
@@ -318,20 +317,20 @@ class PdfIsolateService {
     });
   }
 
-  /// يحول مجموعة صور إلى ملف PDF داخل Isolate.
+  /// يحول مجموعة صور إلى ملف PDF.
   Future<IsolatePdfOutput> convertImagesToPdf({
     required List<String> imagePaths,
     required String outputPath,
     required ScannerToPdfOptions options,
   }) async {
-    return Isolate.run(() {
+    return PlatformStorage.runTask(() {
       final stopwatch = Stopwatch()..start();
       final document = PdfDocument();
       var totalOriginalBytes = 0;
 
       try {
         for (final imgPath in imagePaths) {
-          final rawBytes = File(imgPath).readAsBytesSync();
+          final rawBytes = PlatformStorage.readBytesSync(imgPath);
           totalOriginalBytes += rawBytes.length;
 
           final processedImageBytes = _applyDocumentFilterAndCrop(
@@ -361,7 +360,7 @@ class PdfIsolateService {
         }
 
         final outBytes = Uint8List.fromList(document.saveSync());
-        File(outputPath).writeAsBytesSync(outBytes, flush: true);
+        PlatformStorage.writeBytesSync(outputPath, outBytes);
         stopwatch.stop();
 
         return IsolatePdfOutput(
@@ -383,9 +382,9 @@ class PdfIsolateService {
     required String outputPath,
     required PageNumberPosition position,
   }) async {
-    return Isolate.run(() {
+    return PlatformStorage.runTask(() {
       final stopwatch = Stopwatch()..start();
-      final inputBytes = File(inputPath).readAsBytesSync();
+      final inputBytes = PlatformStorage.readBytesSync(inputPath);
       final document = PdfDocument(inputBytes: inputBytes);
 
       try {
@@ -421,7 +420,7 @@ class PdfIsolateService {
         }
 
         final outBytes = Uint8List.fromList(document.saveSync());
-        File(outputPath).writeAsBytesSync(outBytes, flush: true);
+        PlatformStorage.writeBytesSync(outputPath, outBytes);
         stopwatch.stop();
 
         return IsolatePdfOutput(
@@ -446,9 +445,9 @@ class PdfIsolateService {
     required bool allPages,
     required bool centerDiagonal,
   }) async {
-    return Isolate.run(() {
+    return PlatformStorage.runTask(() {
       final stopwatch = Stopwatch()..start();
-      final inputBytes = File(inputPath).readAsBytesSync();
+      final inputBytes = PlatformStorage.readBytesSync(inputPath);
       final document = PdfDocument(inputBytes: inputBytes);
 
       try {
@@ -489,7 +488,7 @@ class PdfIsolateService {
         }
 
         final outBytes = Uint8List.fromList(document.saveSync());
-        File(outputPath).writeAsBytesSync(outBytes, flush: true);
+        PlatformStorage.writeBytesSync(outputPath, outBytes);
         stopwatch.stop();
 
         return IsolatePdfOutput(
@@ -511,9 +510,9 @@ class PdfIsolateService {
     required String outputPath,
     required String password,
   }) async {
-    return Isolate.run(() {
+    return PlatformStorage.runTask(() {
       final stopwatch = Stopwatch()..start();
-      final inputBytes = File(inputPath).readAsBytesSync();
+      final inputBytes = PlatformStorage.readBytesSync(inputPath);
       final document = PdfDocument(inputBytes: inputBytes);
 
       try {
@@ -521,7 +520,7 @@ class PdfIsolateService {
         document.security.ownerPassword = password;
 
         final outBytes = Uint8List.fromList(document.saveSync());
-        File(outputPath).writeAsBytesSync(outBytes, flush: true);
+        PlatformStorage.writeBytesSync(outputPath, outBytes);
         stopwatch.stop();
 
         return IsolatePdfOutput(
@@ -543,9 +542,9 @@ class PdfIsolateService {
     required String outputPath,
     required String password,
   }) async {
-    return Isolate.run(() {
+    return PlatformStorage.runTask(() {
       final stopwatch = Stopwatch()..start();
-      final inputBytes = File(inputPath).readAsBytesSync();
+      final inputBytes = PlatformStorage.readBytesSync(inputPath);
       final sourceDoc = PdfDocument(
         inputBytes: inputBytes,
         password: password.isEmpty ? null : password,
@@ -563,7 +562,7 @@ class PdfIsolateService {
         }
 
         final outBytes = Uint8List.fromList(cleanDoc.saveSync());
-        File(outputPath).writeAsBytesSync(outBytes, flush: true);
+        PlatformStorage.writeBytesSync(outputPath, outBytes);
         stopwatch.stop();
 
         return IsolatePdfOutput(
@@ -585,9 +584,9 @@ class PdfIsolateService {
     required String inputPath,
     required String outputPath,
   }) async {
-    return Isolate.run(() {
+    return PlatformStorage.runTask(() {
       final stopwatch = Stopwatch()..start();
-      final inputBytes = File(inputPath).readAsBytesSync();
+      final inputBytes = PlatformStorage.readBytesSync(inputPath);
       final sourceDoc = PdfDocument(inputBytes: inputBytes);
       final rebuiltDoc = PdfDocument();
 
@@ -608,7 +607,7 @@ class PdfIsolateService {
         }
 
         final outBytes = Uint8List.fromList(rebuiltDoc.saveSync());
-        File(outputPath).writeAsBytesSync(outBytes, flush: true);
+        PlatformStorage.writeBytesSync(outputPath, outBytes);
         stopwatch.stop();
 
         return IsolatePdfOutput(
@@ -630,9 +629,9 @@ class PdfIsolateService {
     required String inputPath,
     required String outputPath,
   }) async {
-    return Isolate.run(() {
+    return PlatformStorage.runTask(() {
       final stopwatch = Stopwatch()..start();
-      final inputBytes = File(inputPath).readAsBytesSync();
+      final inputBytes = PlatformStorage.readBytesSync(inputPath);
       final document = PdfDocument(inputBytes: inputBytes);
 
       try {
@@ -650,7 +649,7 @@ class PdfIsolateService {
         }
 
         final encodedBytes = utf8.encode(buffer.toString());
-        File(outputPath).writeAsBytesSync(encodedBytes, flush: true);
+        PlatformStorage.writeBytesSync(outputPath, encodedBytes);
         stopwatch.stop();
 
         return IsolatePdfOutput(
@@ -672,7 +671,7 @@ class PdfIsolateService {
     required String outputPath,
     int originalBytesHint = 0,
   }) async {
-    return Isolate.run(() {
+    return PlatformStorage.runTask(() {
       final stopwatch = Stopwatch()..start();
       final document = PdfDocument();
       document.pageSettings.margins.all = 0;
@@ -692,7 +691,7 @@ class PdfIsolateService {
         }
 
         final outBytes = Uint8List.fromList(document.saveSync());
-        File(outputPath).writeAsBytesSync(outBytes, flush: true);
+        PlatformStorage.writeBytesSync(outputPath, outBytes);
         stopwatch.stop();
 
         return IsolatePdfOutput(

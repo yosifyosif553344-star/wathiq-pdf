@@ -1,8 +1,7 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import '../../../../data/services/pdf_isolate_service.dart';
+import '../../../../data/services/platform_storage.dart';
 import '../../../../domain/models/compression_preset.dart';
 import '../../../../domain/models/pdf_operation_type.dart';
 import '../../../../domain/models/scanner_options.dart';
@@ -572,13 +571,7 @@ class _ToolWorkspaceScreenState extends State<ToolWorkspaceScreen> {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.file(
-                    File(images[i]),
-                    width: 76,
-                    height: 96,
-                    fit: BoxFit.cover,
-                    cacheWidth: 200,
-                  ),
+                  child: PlatformStorage.buildImageThumbnail(images[i]),
                 ),
                 PositionedDirectional(
                   top: 4,

@@ -1,9 +1,7 @@
-import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
 
 import '../../domain/models/compression_preset.dart';
 import '../../domain/models/page_instruction.dart';
@@ -11,10 +9,11 @@ import '../../domain/models/pdf_operation_type.dart';
 import '../../domain/models/processed_file_record.dart';
 import '../../domain/models/scanner_options.dart';
 import '../services/pdf_isolate_service.dart';
+import '../services/platform_storage.dart';
 import '../services/temp_cache_cleanup_service.dart';
 import 'local_history_repository.dart';
 
-/// مستودع تنفيذ جميع عمليات الـ PDF والأوفيس والصور المحلية مع تفريغ الكاش وتحديث السجل تلقائياً.
+/// مستودع تنفيذ جميع عمليات الـ PDF المحلية مع تفريغ الكاش وتحديث السجل تلقائياً.
 class PdfOperationsRepository {
   PdfOperationsRepository({
     required PdfIsolateService isolateService,
@@ -30,13 +29,8 @@ class PdfOperationsRepository {
 
   PdfIsolateService get isolateService => _isolateService;
 
-  Future<Directory> _resolveOutputDirectory() async {
-    final docsDir = await getApplicationDocumentsDirectory();
-    final wathiqDir = Directory('${docsDir.path}/Wathiq_PDF');
-    if (!await wathiqDir.exists()) {
-      await wathiqDir.create(recursive: true);
-    }
-    return wathiqDir;
+  Future<String> _resolveOutputDirectory() {
+    return PlatformStorage.resolveOutputDirPath();
   }
 
   Future<ProcessedFileRecord> _saveToHistory({
@@ -68,7 +62,7 @@ class PdfOperationsRepository {
       final cleanName = _sanitizeExt(desiredOutputName, '.pdf', 'مدمج');
       final result = await _isolateService.mergePdfs(
         inputPaths: inputPaths,
-        outputPath: '${outDir.path}/$cleanName',
+        outputPath: '${outDir}/$cleanName',
       );
       return _saveToHistory(
         fileName: cleanName,
@@ -91,7 +85,7 @@ class PdfOperationsRepository {
       final baseName = _stripExtension(desiredOutputName, fallback: 'مقسم');
       final result = await _isolateService.splitPdf(
         inputPath: inputPath,
-        outputDirectory: outDir.path,
+        outputDirectory: outDir,
         baseOutputFileName: baseName,
         oneBasedPages: selectedPages,
         burstEachPageIntoSeparateFile: burstEachPageIntoSeparateFile,
@@ -119,7 +113,7 @@ class PdfOperationsRepository {
       final cleanName = _sanitizeExt(desiredOutputName, '.pdf', 'منظم');
       final result = await _isolateService.organizePages(
         inputPath: inputPath,
-        outputPath: '${outDir.path}/$cleanName',
+        outputPath: '${outDir}/$cleanName',
         instructions: instructions,
       );
       return _saveToHistory(
@@ -142,7 +136,7 @@ class PdfOperationsRepository {
       final cleanName = _sanitizeExt(desiredOutputName, '.pdf', 'مدور');
       final result = await _isolateService.rotateAllPages(
         inputPath: inputPath,
-        outputPath: '${outDir.path}/$cleanName',
+        outputPath: '${outDir}/$cleanName',
         rotationDegrees: rotationDegrees,
       );
       return _saveToHistory(
@@ -165,7 +159,7 @@ class PdfOperationsRepository {
       final cleanName = _sanitizeExt(desiredOutputName, '.pdf', 'مضغوط');
       final result = await _isolateService.compressPdf(
         inputPath: inputPath,
-        outputPath: '${outDir.path}/$cleanName',
+        outputPath: '${outDir}/$cleanName',
         level: level,
       );
       return _saveToHistory(
@@ -188,7 +182,7 @@ class PdfOperationsRepository {
       final cleanName = _sanitizeExt(desiredOutputName, '.pdf', 'صور_PDF');
       final result = await _isolateService.convertImagesToPdf(
         imagePaths: imagePaths,
-        outputPath: '${outDir.path}/$cleanName',
+        outputPath: '${outDir}/$cleanName',
         options: options,
       );
       return _saveToHistory(
@@ -211,7 +205,7 @@ class PdfOperationsRepository {
       final cleanName = _sanitizeExt(desiredOutputName, '.pdf', 'مرقم');
       final result = await _isolateService.addPageNumbers(
         inputPath: inputPath,
-        outputPath: '${outDir.path}/$cleanName',
+        outputPath: '${outDir}/$cleanName',
         position: position,
       );
       return _saveToHistory(
@@ -238,7 +232,7 @@ class PdfOperationsRepository {
       final cleanName = _sanitizeExt(desiredOutputName, '.pdf', 'معدل');
       final result = await _isolateService.stampOverlayOnPdf(
         inputPath: inputPath,
-        outputPath: '${outDir.path}/$cleanName',
+        outputPath: '${outDir}/$cleanName',
         overlayPngBytes: overlayPngBytes,
         opacity: opacity,
         allPages: allPages,
@@ -264,7 +258,7 @@ class PdfOperationsRepository {
       final cleanName = _sanitizeExt(desiredOutputName, '.pdf', 'محمي');
       final result = await _isolateService.protectPdf(
         inputPath: inputPath,
-        outputPath: '${outDir.path}/$cleanName',
+        outputPath: '${outDir}/$cleanName',
         password: password,
       );
       return _saveToHistory(
@@ -287,7 +281,7 @@ class PdfOperationsRepository {
       final cleanName = _sanitizeExt(desiredOutputName, '.pdf', 'مفتوح');
       final result = await _isolateService.unlockPdf(
         inputPath: inputPath,
-        outputPath: '${outDir.path}/$cleanName',
+        outputPath: '${outDir}/$cleanName',
         password: password,
       );
       return _saveToHistory(
@@ -309,7 +303,7 @@ class PdfOperationsRepository {
       final cleanName = _sanitizeExt(desiredOutputName, '.pdf', 'مصلح');
       final result = await _isolateService.repairPdf(
         inputPath: inputPath,
-        outputPath: '${outDir.path}/$cleanName',
+        outputPath: '${outDir}/$cleanName',
       );
       return _saveToHistory(
         fileName: cleanName,
@@ -330,7 +324,7 @@ class PdfOperationsRepository {
       final cleanName = _sanitizeExt(desiredOutputName, '.txt', 'نص');
       final result = await _isolateService.extractPdfText(
         inputPath: inputPath,
-        outputPath: '${outDir.path}/$cleanName',
+        outputPath: '${outDir}/$cleanName',
       );
       return _saveToHistory(
         fileName: cleanName,
@@ -358,7 +352,7 @@ class PdfOperationsRepository {
       );
       final result = await _isolateService.buildPdfFromRenderedPages(
         pagePngList: pageBitmaps,
-        outputPath: '${outDir.path}/$cleanName',
+        outputPath: '${outDir}/$cleanName',
         originalBytesHint: originalBytesHint,
       );
       return _saveToHistory(

@@ -1,14 +1,13 @@
-import 'dart:io';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:open_filex/open_filex.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 import '../../../../data/repositories/local_history_repository.dart';
 import '../../../../data/repositories/pdf_operations_repository.dart';
 import '../../../../data/services/pdf_isolate_service.dart';
+import '../../../../data/services/platform_storage.dart';
 import '../../../../domain/models/compression_preset.dart';
 import '../../../../domain/models/page_instruction.dart';
 import '../../../../domain/models/pdf_operation_type.dart';
@@ -267,7 +266,7 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// اختيار ملف أو عدة ملفات (PDF أو أوفيس حسب الأداة المختارة).
+  /// اختيار ملف أو عدة ملفات PDF.
   Future<void> pickPdfFiles({bool allowMultiple = true}) async {
     _workspaceError = null;
     try {
@@ -277,11 +276,13 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
         pickedFiles = await FilePicker.pickFiles(
           type: FileType.custom,
           allowedExtensions: extensions,
+          withData: kIsWeb,
         );
       } else {
         final single = await FilePicker.pickFile(
           type: FileType.custom,
           allowedExtensions: extensions,
+          withData: kIsWeb,
         );
         pickedFiles = single != null
             ? <PlatformFile>[single]
@@ -294,14 +295,16 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
       }
 
       for (final platformFile in pickedFiles) {
-        final path = platformFile.path;
-        if (path == null) continue;
-        final file = File(path);
-        if (!await file.exists()) continue;
+        final bytes =
+            platformFile.bytes ?? await platformFile.xFile.readAsBytes();
+        final resolvedPath = await PlatformStorage.registerPickedBytes(
+          fileName: platformFile.name,
+          nativePath: kIsWeb ? null : platformFile.path,
+          bytes: bytes,
+        );
 
-        final bytes = await file.readAsBytes();
         var pagesCount = 1;
-        if (path.toLowerCase().endsWith('.pdf')) {
+        if (platformFile.name.toLowerCase().endsWith('.pdf')) {
           try {
             final doc = PdfDocument(inputBytes: bytes);
             pagesCount = doc.pages.count;
@@ -313,7 +316,7 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
 
         _selectedFiles.add(
           SelectedInputFile(
-            path: path,
+            path: resolvedPath,
             name: platformFile.name,
             sizeBytes: bytes.length,
             pageCount: pagesCount,
@@ -337,7 +340,13 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
       final pickedList = await picker.pickMultiImage();
       if (pickedList.isEmpty) return;
       for (final imgFile in pickedList) {
-        _selectedImages.add(imgFile.path);
+        final bytes = await imgFile.readAsBytes();
+        final resolvedPath = await PlatformStorage.registerPickedBytes(
+          fileName: imgFile.name,
+          nativePath: kIsWeb ? null : imgFile.path,
+          bytes: bytes,
+        );
+        _selectedImages.add(resolvedPath);
       }
       notifyListeners();
     } catch (_) {
@@ -356,7 +365,13 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
         imageQuality: 95,
       );
       if (captured == null) return;
-      _selectedImages.add(captured.path);
+      final bytes = await captured.readAsBytes();
+      final resolvedPath = await PlatformStorage.registerPickedBytes(
+        fileName: captured.name,
+        nativePath: kIsWeb ? null : captured.path,
+        bytes: bytes,
+      );
+      _selectedImages.add(resolvedPath);
       notifyListeners();
     } catch (_) {
       _workspaceError = 'تعذر تشغيل الكاميرا.';
@@ -641,17 +656,11 @@ class WathiqWorkspaceViewModel extends ChangeNotifier {
   }
 
   Future<void> openProcessedFile(ProcessedFileRecord record) async {
-    await OpenFilex.open(record.filePath);
+    await PlatformStorage.openFile(record.filePath, record.fileName);
   }
 
   Future<void> shareProcessedFile(ProcessedFileRecord record) async {
-    final file = File(record.filePath);
-    if (await file.exists()) {
-      await Share.shareXFiles(
-        [XFile(record.filePath)],
-        text: record.fileName,
-      );
-    }
+    await PlatformStorage.shareFile(record.filePath, record.fileName);
   }
 
   Future<void> renameProcessedFile({

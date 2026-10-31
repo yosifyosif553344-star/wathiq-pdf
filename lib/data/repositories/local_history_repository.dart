@@ -1,9 +1,9 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/models/processed_file_record.dart';
+import '../services/platform_storage.dart';
 
-/// مستودع سجل العمليات الأخيرة المحفوظ محلياً داخل الجهاز.
+/// مستودع سجل العمليات الأخيرة المحفوظ محلياً داخل الجهاز أو المتصفح.
 class LocalHistoryRepository {
   LocalHistoryRepository({SharedPreferences? preferences})
       : _preferences = preferences;
@@ -38,7 +38,8 @@ class LocalHistoryRepository {
   }
 
   /// يضيف سجل عملية جديدة في أعلى القائمة المحلية.
-  Future<List<ProcessedFileRecord>> addRecord(ProcessedFileRecord record) async {
+  Future<List<ProcessedFileRecord>> addRecord(
+      ProcessedFileRecord record) async {
     final current = await loadRecentRecords();
     final updated = [
       record,
@@ -62,18 +63,10 @@ class LocalHistoryRepository {
 
     for (final item in current) {
       if (item.id == id) {
-        var targetPath = item.filePath;
-        final existingFile = File(item.filePath);
-        if (await existingFile.exists()) {
-          final parentDir = existingFile.parent.path;
-          final candidatePath = '$parentDir/$sanitized';
-          try {
-            final renamedFile = await existingFile.rename(candidatePath);
-            targetPath = renamedFile.path;
-          } on FileSystemException {
-            // إذا تعذر نقل الملف الفعلي نحتفظ بالمسار مع تحديث الاسم المعروض.
-          }
-        }
+        final targetPath = await PlatformStorage.renameFileIfPossible(
+          item.filePath,
+          sanitized,
+        );
         updated.add(item.copyWith(fileName: sanitized, filePath: targetPath));
       } else {
         updated.add(item);
@@ -92,14 +85,7 @@ class LocalHistoryRepository {
     final current = await loadRecentRecords();
     if (deleteFileFromDisk) {
       for (final item in current.where((e) => e.id == id)) {
-        final file = File(item.filePath);
-        if (await file.exists()) {
-          try {
-            await file.delete();
-          } on FileSystemException {
-            // تجاهل أخطاء الحذف إذا نُقل الملف خارجياً.
-          }
-        }
+        await PlatformStorage.deleteFileIfPossible(item.filePath);
       }
     }
 
