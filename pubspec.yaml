@@ -16,6 +16,7 @@ dependencies:
   syncfusion_flutter_pdf: ^35.1.42
   pdf: any
   image: any
+  archive: any
 
   # المسح الضوئي بالكاميرا واختيار الملفات والصور
   image_picker: any

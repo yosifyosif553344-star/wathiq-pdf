@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' show Offset, Rect, Size;
 
+import 'package:archive/archive.dart';
 import 'package:image/image.dart' as img;
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
@@ -300,11 +301,15 @@ class PdfIsolateService {
         };
 
         var bestBytes = inputBytes;
+        Uint8List? standardTableBytes;
 
-        // 1. إعادة بناء صفحات الوثيقة في ملف جديد مضغوط بدون كائنات تالفة أو تحديثات تراكمية
+        // 1. إعادة بناء الوثيقة بجدول مراجع نصي قياسي (crossReferenceTable) لتسهيل ضغط الصور وتيارات البيانات
         final rebuiltDoc = PdfDocument();
         try {
           rebuiltDoc.compressionLevel = syncCompression;
+          rebuiltDoc.fileStructure.crossReferenceType =
+              PdfCrossReferenceType.crossReferenceTable;
+          rebuiltDoc.fileStructure.incrementalUpdate = false;
           for (var i = 0; i < totalPages; i++) {
             final srcPage = sourceDoc.pages[i];
             final section = rebuiltDoc.sections!.add();
@@ -317,8 +322,11 @@ class PdfIsolateService {
             );
           }
           final rebuiltBytes = Uint8List.fromList(rebuiltDoc.saveSync());
-          if (rebuiltBytes.isNotEmpty && rebuiltBytes.length < bestBytes.length) {
-            bestBytes = rebuiltBytes;
+          if (rebuiltBytes.isNotEmpty) {
+            standardTableBytes = rebuiltBytes;
+            if (rebuiltBytes.length < bestBytes.length) {
+              bestBytes = rebuiltBytes;
+            }
           }
         } catch (_) {
           // في حال تعذر نسخ القوالب لبعض الصفحات المعقدة نحتفظ بالنسخة الأصلية للمرحلة التالية
@@ -337,7 +345,18 @@ class PdfIsolateService {
           // تجاهل أي خطأ في جدول المراجع المتقاطعة لبعض الملفات القديمة
         }
 
-        // 3. ضغط الصور المضمنة (JPEG Streams) داخل هيكل الـ PDF وتحديث جدول المراجع
+        // 3. ضغط جميع الصور المضمنة (JPEG + FlateDecode Bitmaps) وتيارات البيانات في النسخة القياسية والأصلية
+        if (standardTableBytes != null) {
+          final compressedRebuilt = _recompressEmbeddedJpegsInPdf(
+            pdfBytes: standardTableBytes,
+            level: level,
+            expectedPages: totalPages,
+          );
+          if (compressedRebuilt.length < bestBytes.length) {
+            bestBytes = compressedRebuilt;
+          }
+        }
+
         final imageCompressedBytes = _recompressEmbeddedJpegsInPdf(
           pdfBytes: bestBytes,
           level: level,
@@ -794,7 +813,7 @@ class PdfIsolateService {
     });
   }
 
-  /// يضغط تيارات الصور المضمنة (JPEG / DCTDecode) داخل ملف الـ PDF ويعيد بناء جدول المراجع (xref).
+  /// يضغط تيارات الصور المضمنة (DCTDecode + FlateDecode Images) وتيارات البيانات داخل الـ PDF ويعيد بناء جدول المراجع (xref).
   static Uint8List _recompressEmbeddedJpegsInPdf({
     required Uint8List pdfBytes,
     required CompressionLevel level,
@@ -806,13 +825,15 @@ class PdfIsolateService {
       if (xrefPos <= 0) return pdfBytes;
 
       final maxDim = switch (level) {
-        CompressionLevel.light => 2200,
-        CompressionLevel.medium => 1400,
-        CompressionLevel.extreme => 960,
+        CompressionLevel.light => 1800,
+        CompressionLevel.medium => 1200,
+        CompressionLevel.extreme => 780,
       };
 
       final streamPattern = RegExp(r'stream\r?\n');
       final lengthPattern = RegExp(r'/Length\s+(\d+)');
+      final widthPattern = RegExp(r'/Width\s+(\d+)');
+      final heightPattern = RegExp(r'/Height\s+(\d+)');
       final objHeaderPattern = RegExp(r'(\d+)\s+0\s+obj\b');
 
       final outBuffer = BytesBuilder(copy: false);
@@ -826,59 +847,128 @@ class PdfIsolateService {
         final objEnd = endObjIdx + 6;
 
         final objSlice = rawText.substring(match.start, objEnd);
-        if (objSlice.contains('/DCTDecode')) {
-          final streamMatch = streamPattern.firstMatch(objSlice);
-          final endStreamRel = objSlice.lastIndexOf('endstream');
-          final lenMatch = lengthPattern.firstMatch(objSlice);
+        final streamMatch = streamPattern.firstMatch(objSlice);
+        final endStreamRel = objSlice.lastIndexOf('endstream');
+        final lenMatch = lengthPattern.firstMatch(objSlice);
 
-          if (streamMatch != null &&
-              endStreamRel > streamMatch.end &&
-              lenMatch != null) {
-            final streamDataStart = match.start + streamMatch.end;
-            var streamDataEnd = match.start + endStreamRel;
-            if (streamDataEnd > streamDataStart &&
-                pdfBytes[streamDataEnd - 1] == 0x0A) {
-              streamDataEnd--;
-              if (streamDataEnd > streamDataStart &&
-                  pdfBytes[streamDataEnd - 1] == 0x0D) {
-                streamDataEnd--;
-              }
+        if (streamMatch == null ||
+            endStreamRel <= streamMatch.end ||
+            lenMatch == null) {
+          continue;
+        }
+
+        final dictHeader = objSlice.substring(0, streamMatch.end);
+        final streamDataStart = match.start + streamMatch.end;
+        var streamDataEnd = match.start + endStreamRel;
+        if (streamDataEnd > streamDataStart &&
+            pdfBytes[streamDataEnd - 1] == 0x0A) {
+          streamDataEnd--;
+          if (streamDataEnd > streamDataStart &&
+              pdfBytes[streamDataEnd - 1] == 0x0D) {
+            streamDataEnd--;
+          }
+        }
+        if (streamDataEnd <= streamDataStart + 16) continue;
+
+        final origStreamBytes = Uint8List.sublistView(
+          pdfBytes,
+          streamDataStart,
+          streamDataEnd,
+        );
+
+        final isImageObj = dictHeader.contains('/DCTDecode') ||
+            dictHeader.contains('/Subtype /Image') ||
+            dictHeader.contains('/Subtype/Image');
+
+        if (isImageObj && !dictHeader.contains('/ImageMask')) {
+          img.Image? decodedImg;
+
+          var unpacked = origStreamBytes;
+          if (dictHeader.contains('/FlateDecode') &&
+              !(origStreamBytes.length > 2 &&
+                  origStreamBytes[0] == 0xFF &&
+                  origStreamBytes[1] == 0xD8)) {
+            try {
+              unpacked = Uint8List.fromList(
+                const ZLibDecoder().decodeBytes(origStreamBytes),
+              );
+            } catch (_) {
+              unpacked = origStreamBytes;
+            }
+          }
+
+          if ((unpacked.length > 2 &&
+                  unpacked[0] == 0xFF &&
+                  unpacked[1] == 0xD8) ||
+              dictHeader.contains('/DCTDecode')) {
+            decodedImg = img.decodeJpg(unpacked) ?? img.decodeImage(unpacked);
+          } else if (dictHeader.contains('/FlateDecode') &&
+              !dictHeader.contains('/DeviceCMYK')) {
+            final wMatch = widthPattern.firstMatch(dictHeader);
+            final hMatch = heightPattern.firstMatch(dictHeader);
+            final w = wMatch != null ? int.tryParse(wMatch.group(1)!) : null;
+            final h = hMatch != null ? int.tryParse(hMatch.group(1)!) : null;
+            final channels = dictHeader.contains('/DeviceGray') ? 1 : 3;
+
+            if (w != null && h != null && w > 0 && h > 0) {
+              decodedImg = _decodeRawOrPngPredictedBitmap(
+                unpacked: unpacked,
+                width: w,
+                height: h,
+                channels: channels,
+              );
+            }
+          }
+
+          if (decodedImg != null) {
+            var working = decodedImg;
+            if (working.width > maxDim || working.height > maxDim) {
+              working = working.width >= working.height
+                  ? img.copyResize(working, width: maxDim)
+                  : img.copyResize(working, height: maxDim);
             }
 
-            if (streamDataEnd > streamDataStart + 16) {
-              final origJpeg = Uint8List.sublistView(
-                pdfBytes,
-                streamDataStart,
-                streamDataEnd,
+            final reencoded = Uint8List.fromList(
+              img.encodeJpg(working, quality: level.imageQuality),
+            );
+
+            if (reencoded.length + 32 < origStreamBytes.length) {
+              var newDict = dictHeader.replaceFirst(
+                lengthPattern,
+                '/Length ${reencoded.length}',
               );
-              final decodedImg = img.decodeJpg(origJpeg);
-              if (decodedImg != null) {
-                var working = decodedImg;
-                if (working.width > maxDim || working.height > maxDim) {
-                  working = working.width >= working.height
-                      ? img.copyResize(working, width: maxDim)
-                      : img.copyResize(working, height: maxDim);
-                }
-                final reencoded = Uint8List.fromList(
-                  img.encodeJpg(working, quality: level.imageQuality),
-                );
-                if (reencoded.length + 64 < origJpeg.length) {
-                  outBuffer.add(
-                    Uint8List.sublistView(pdfBytes, cursor, match.start),
-                  );
-                  final dictPart = objSlice
-                      .substring(0, streamMatch.end)
-                      .replaceFirst(
-                        lengthPattern,
-                        '/Length ${reencoded.length}',
-                      );
-                  outBuffer.add(latin1.encode(dictPart));
-                  outBuffer.add(reencoded);
-                  outBuffer.add(latin1.encode('\r\nendstream\r\nendobj'));
-                  cursor = objEnd;
-                  changedAny = true;
-                }
+              newDict = newDict.replaceAll(
+                RegExp(r'/Filter\s*\[[^\]]*\]'),
+                '/Filter /DCTDecode',
+              );
+              newDict = newDict.replaceAll(
+                RegExp(r'/Filter\s*/FlateDecode'),
+                '/Filter /DCTDecode',
+              );
+              newDict = newDict.replaceAll(
+                RegExp(r'/DecodeParms\s*<<[^>]*>>'),
+                '',
+              );
+              if (working.width != decodedImg.width ||
+                  working.height != decodedImg.height) {
+                newDict = newDict
+                    .replaceFirst(widthPattern, '/Width ${working.width}')
+                    .replaceFirst(heightPattern, '/Height ${working.height}');
               }
+              if (dictHeader.contains('/DeviceGray') &&
+                  !newDict.contains('/DeviceRGB')) {
+                newDict =
+                    newDict.replaceFirst('/DeviceGray', '/DeviceRGB');
+              }
+
+              outBuffer.add(
+                Uint8List.sublistView(pdfBytes, cursor, match.start),
+              );
+              outBuffer.add(latin1.encode(newDict));
+              outBuffer.add(reencoded);
+              outBuffer.add(latin1.encode('\r\nendstream\r\nendobj'));
+              cursor = objEnd;
+              changedAny = true;
             }
           }
         }
@@ -940,6 +1030,81 @@ class PdfIsolateService {
       // في حال وجود تشفير أو تيارات معقدة نعود للنسخة الآمنة
     }
     return pdfBytes;
+  }
+
+  /// يحول بيانات البكسل الخام أو المفلترة بـ PNG Predictor داخل FlateDecode إلى كائن صورة قابل للضغط.
+  static img.Image? _decodeRawOrPngPredictedBitmap({
+    required Uint8List unpacked,
+    required int width,
+    required int height,
+    required int channels,
+  }) {
+    final rowBytes = width * channels;
+    final expectedRawLen = rowBytes * height;
+    final expectedPredictedLen = (rowBytes + 1) * height;
+
+    Uint8List? rawPixels;
+    if (unpacked.length == expectedRawLen) {
+      rawPixels = unpacked;
+    } else if (unpacked.length == expectedPredictedLen) {
+      rawPixels = Uint8List(expectedRawLen);
+      var srcOffset = 0;
+      var dstOffset = 0;
+      for (var y = 0; y < height; y++) {
+        final filter = unpacked[srcOffset++];
+        for (var x = 0; x < rowBytes; x++) {
+          final raw = unpacked[srcOffset++];
+          final left = x >= channels ? rawPixels[dstOffset + x - channels] : 0;
+          final up = y > 0 ? rawPixels[dstOffset - rowBytes + x] : 0;
+          final upLeft = (y > 0 && x >= channels)
+              ? rawPixels[dstOffset - rowBytes + x - channels]
+              : 0;
+          final val = switch (filter) {
+            0 => raw,
+            1 => (raw + left) & 0xFF,
+            2 => (raw + up) & 0xFF,
+            3 => (raw + ((left + up) >> 1)) & 0xFF,
+            4 => (raw + _paethPredictor(left, up, upLeft)) & 0xFF,
+            _ => raw,
+          };
+          rawPixels[dstOffset + x] = val;
+        }
+        dstOffset += rowBytes;
+      }
+    }
+
+    if (rawPixels == null) return null;
+
+    final image = img.Image(width: width, height: height);
+    var idx = 0;
+    if (channels == 1) {
+      for (var y = 0; y < height; y++) {
+        for (var x = 0; x < width; x++) {
+          final v = rawPixels[idx++];
+          image.setPixelRgb(x, y, v, v, v);
+        }
+      }
+    } else {
+      for (var y = 0; y < height; y++) {
+        for (var x = 0; x < width; x++) {
+          final r = rawPixels[idx++];
+          final g = rawPixels[idx++];
+          final b = rawPixels[idx++];
+          image.setPixelRgb(x, y, r, g, b);
+        }
+      }
+    }
+    return image;
+  }
+
+  static int _paethPredictor(int a, int b, int c) {
+    final p = a + b - c;
+    final pa = (p - a).abs();
+    final pb = (p - b).abs();
+    final pc = (p - c).abs();
+    if (pa <= pb && pa <= pc) return a;
+    if (pb <= pc) return b;
+    return c;
   }
 
   /// يعالج النصوص العربية المستخرجة من الـ PDF (تطبيع الحروف الموصولة وإصلاح الانعكاس البصري).

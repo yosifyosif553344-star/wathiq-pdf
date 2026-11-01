@@ -2,29 +2,29 @@
 enum CompressionLevel {
   light(
     id: 'light',
-    title: 'ضغط خفيف',
+    title: 'ضغط خفيف (أعلى جودة)',
     subtitle: 'دقة 300 DPI — يحافظ على وضوح الطباعة الكامل',
-    imageQuality: 85,
+    imageQuality: 72,
     targetDpi: 300,
-    expectedRatio: 0.75,
+    expectedRatio: 0.72,
     isRecommended: false,
   ),
   medium(
     id: 'medium',
-    title: 'ضغط متوسط',
+    title: 'ضغط متوسط (موصى به)',
     subtitle: 'دقة 150 DPI — توازن مثالي بين الوضوح والحجم',
-    imageQuality: 55,
+    imageQuality: 48,
     targetDpi: 150,
-    expectedRatio: 0.20,
+    expectedRatio: 0.45,
     isRecommended: true,
   ),
   extreme(
     id: 'extreme',
-    title: 'ضغط أقصى',
+    title: 'ضغط أقصى (أصغر حجم)',
     subtitle: 'دقة 96 DPI — أصغر حجم ممكن للمراسلة السريعة',
-    imageQuality: 30,
+    imageQuality: 26,
     targetDpi: 96,
-    expectedRatio: 0.12,
+    expectedRatio: 0.25,
     isRecommended: false,
   );
 

@@ -4,6 +4,7 @@ import '../../../../data/services/pdf_isolate_service.dart';
 import '../../../../data/services/platform_storage.dart';
 import '../../../../domain/models/compression_preset.dart';
 import '../../../../domain/models/pdf_operation_type.dart';
+import '../../../../domain/models/processed_file_record.dart';
 import '../../../../domain/models/scanner_options.dart';
 import '../../../core/theme/wathiq_theme.dart';
 import '../view_models/wathiq_workspace_view_model.dart';
@@ -272,25 +273,41 @@ class _ToolWorkspaceScreenState extends State<ToolWorkspaceScreen> {
   }
 
   List<Widget> _compress(WathiqPalette palette) {
+    final totalBytes = vm.totalSelectedBytes;
+    final activeSavingPct =
+        ((1.0 - vm.compressionLevel.expectedRatio) * 100).round();
+    final activeEstimatedSize =
+        ProcessedFileRecord.formatBytes(vm.estimatedCompressedBytes);
+    final currentFormattedSize = ProcessedFileRecord.formatBytes(totalBytes);
+
     return [
       ..._singlePdfPicker(palette),
       if (_hasFile) ...[
         const SizedBox(height: 24),
-        const _SectionLabel(text: 'مستوى الضغط'),
+        const _SectionLabel(text: 'مستوى الضغط وتقدير الحجم'),
         for (final level in CompressionLevel.values)
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: _ChoiceCard(
-              selected: vm.compressionLevel == level,
-              title: level.title,
-              subtitle: level == CompressionLevel.medium
-                  ? 'موصى به'
-                  : level == CompressionLevel.light
-                      ? 'أعلى جودة'
-                      : 'أصغر حجم',
-              onTap: () => vm.setCompressionLevel(level),
+            child: Builder(
+              builder: (_) {
+                final savingPct = ((1.0 - level.expectedRatio) * 100).round();
+                final estBytes = (totalBytes * level.expectedRatio).round();
+                final estFormatted = ProcessedFileRecord.formatBytes(estBytes);
+                return _ChoiceCard(
+                  selected: vm.compressionLevel == level,
+                  title: level.title,
+                  subtitle:
+                      'تخفيف متوقع ~$savingPct% • يصبح تقريباً $estFormatted',
+                  onTap: () => vm.setCompressionLevel(level),
+                );
+              },
             ),
           ),
+        const SizedBox(height: 4),
+        _Hint(
+          text:
+              'الحجم الحالي: $currentFormattedSize ← المتوقع بعد الضغط: ~$activeEstimatedSize (توفير ~$activeSavingPct%)',
+        ),
       ],
     ];
   }
