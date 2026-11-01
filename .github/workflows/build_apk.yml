@@ -42,6 +42,9 @@ jobs:
       - name: Install Flutter Dependencies
         run: flutter pub get
 
+      - name: Run Unit Tests
+        run: flutter test
+
       - name: Build Flutter Web Release
         run: flutter build web --release --base-href "/wathiq-pdf/" --no-tree-shake-icons
 

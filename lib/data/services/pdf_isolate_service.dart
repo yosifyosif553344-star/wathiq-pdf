@@ -821,7 +821,11 @@ class PdfIsolateService {
   }) {
     try {
       final rawText = latin1.decode(pdfBytes);
-      final xrefPos = rawText.lastIndexOf('xref');
+      final startXrefIdx = rawText.lastIndexOf('startxref');
+      if (startXrefIdx <= 0) return pdfBytes;
+      final trailerIdx = rawText.lastIndexOf('trailer', startXrefIdx);
+      if (trailerIdx <= 0) return pdfBytes;
+      final xrefPos = rawText.lastIndexOf(RegExp(r'\bxref\b'), trailerIdx);
       if (xrefPos <= 0) return pdfBytes;
 
       final maxDim = switch (level) {
@@ -831,7 +835,8 @@ class PdfIsolateService {
       };
 
       final streamPattern = RegExp(r'stream\r?\n');
-      final lengthPattern = RegExp(r'/Length\s+(\d+)');
+      final endStreamEndObjPattern = RegExp(r'endstream[\r\n\s]*endobj');
+      final lengthPattern = RegExp(r'/Length\s+\d+(?:\s+0\s+R)?');
       final widthPattern = RegExp(r'/Width\s+(\d+)');
       final heightPattern = RegExp(r'/Height\s+(\d+)');
       final objHeaderPattern = RegExp(r'(\d+)\s+0\s+obj\b');
@@ -842,24 +847,29 @@ class PdfIsolateService {
 
       for (final match in objHeaderPattern.allMatches(rawText)) {
         if (match.start < cursor || match.start >= xrefPos) continue;
-        final endObjIdx = rawText.indexOf('endobj', match.end);
-        if (endObjIdx < 0 || endObjIdx > xrefPos) continue;
-        final objEnd = endObjIdx + 6;
+        final streamMatch = streamPattern.firstMatch(
+          rawText.substring(
+            match.end,
+            (match.end + 1200).clamp(0, xrefPos),
+          ),
+        );
+        if (streamMatch == null) continue;
 
-        final objSlice = rawText.substring(match.start, objEnd);
-        final streamMatch = streamPattern.firstMatch(objSlice);
-        final endStreamRel = objSlice.lastIndexOf('endstream');
-        final lenMatch = lengthPattern.firstMatch(objSlice);
+        final dictHeader = rawText.substring(
+          match.start,
+          match.end + streamMatch.end,
+        );
+        final lenMatch = lengthPattern.firstMatch(dictHeader);
+        if (lenMatch == null) continue;
 
-        if (streamMatch == null ||
-            endStreamRel <= streamMatch.end ||
-            lenMatch == null) {
-          continue;
-        }
+        final streamDataStart = match.end + streamMatch.end;
+        final endMatch = endStreamEndObjPattern.firstMatch(
+          rawText.substring(streamDataStart, xrefPos),
+        );
+        if (endMatch == null) continue;
 
-        final dictHeader = objSlice.substring(0, streamMatch.end);
-        final streamDataStart = match.start + streamMatch.end;
-        var streamDataEnd = match.start + endStreamRel;
+        final objEnd = streamDataStart + endMatch.end;
+        var streamDataEnd = streamDataStart + endMatch.start;
         if (streamDataEnd > streamDataStart &&
             pdfBytes[streamDataEnd - 1] == 0x0A) {
           streamDataEnd--;
@@ -932,7 +942,7 @@ class PdfIsolateService {
               img.encodeJpg(working, quality: level.imageQuality),
             );
 
-            if (reencoded.length + 32 < origStreamBytes.length) {
+            if (reencoded.length + 16 < origStreamBytes.length) {
               var newDict = dictHeader.replaceFirst(
                 lengthPattern,
                 '/Length ${reencoded.length}',
@@ -946,7 +956,7 @@ class PdfIsolateService {
                 '/Filter /DCTDecode',
               );
               newDict = newDict.replaceAll(
-                RegExp(r'/DecodeParms\s*<<[^>]*>>'),
+                RegExp(r'/DecodeParms\s*(?:<<[^>]*>>|\[[^\]]*\])'),
                 '',
               );
               if (working.width != decodedImg.width ||
@@ -957,8 +967,7 @@ class PdfIsolateService {
               }
               if (dictHeader.contains('/DeviceGray') &&
                   !newDict.contains('/DeviceRGB')) {
-                newDict =
-                    newDict.replaceFirst('/DeviceGray', '/DeviceRGB');
+                newDict = newDict.replaceFirst('/DeviceGray', '/DeviceRGB');
               }
 
               outBuffer.add(
@@ -970,6 +979,32 @@ class PdfIsolateService {
               cursor = objEnd;
               changedAny = true;
             }
+          }
+        } else if (dictHeader.contains('/FlateDecode') &&
+            !dictHeader.contains('/DecodeParms') &&
+            origStreamBytes.length > 512) {
+          // إعادة ضغط تيارات الخطوط والنصوص بأقصى مستوى (ZLib Level 9)
+          try {
+            final unpacked = const ZLibDecoder().decodeBytes(origStreamBytes);
+            final recompressed = Uint8List.fromList(
+              const ZLibEncoder().encode(unpacked, level: 9),
+            );
+            if (recompressed.length + 12 < origStreamBytes.length) {
+              final newDict = dictHeader.replaceFirst(
+                lengthPattern,
+                '/Length ${recompressed.length}',
+              );
+              outBuffer.add(
+                Uint8List.sublistView(pdfBytes, cursor, match.start),
+              );
+              outBuffer.add(latin1.encode(newDict));
+              outBuffer.add(recompressed);
+              outBuffer.add(latin1.encode('\r\nendstream\r\nendobj'));
+              cursor = objEnd;
+              changedAny = true;
+            }
+          } catch (_) {
+            // نتجاوز التيارات غير القياسية
           }
         }
       }
@@ -990,10 +1025,6 @@ class PdfIsolateService {
         }
       }
 
-      final trailerIdx = rawText.indexOf('trailer', xrefPos);
-      if (trailerIdx < 0) return pdfBytes;
-      final startXrefIdx = rawText.indexOf('startxref', trailerIdx);
-      if (startXrefIdx < 0) return pdfBytes;
       final trailerDict = rawText.substring(trailerIdx, startXrefIdx);
 
       final newXrefOffset = bodyBytes.length;
